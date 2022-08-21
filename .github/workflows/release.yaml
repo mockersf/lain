@@ -73,13 +73,13 @@ jobs:
 
       - name: build
         run: |
-          cargo build --profile ${{ matrix.profile }} --target ${{ matrix.target.target }} --no-default-features --features=${{ matrix.target.features}}
+          cargo build --profile ${{ matrix.target.profile }} --target ${{ matrix.target.target }} --no-default-features --features=${{ matrix.target.features}}
 
       - name: macOS finish
         if: matrix.target.channel == 'macos'
         run: |
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
-          cp target/${{ matrix.target.target }}/${{ matrix.profile }}/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
+          cp target/${{ matrix.target.target }}/${{ matrix.target.profile }}/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           strip ${{ env.binary }}.app/Contents/MacOS/${{ env.binary }}
           if [ "${{ env.package_assets }}" != "false" ]
           then
@@ -89,7 +89,7 @@ jobs:
         if: matrix.target.channel == 'linux'
         run: |
           mkdir linux
-          cp target/${{ matrix.target.target }}/${{ matrix.profile }}/${{ env.binary }} linux/
+          cp target/${{ matrix.target.target }}/${{ matrix.target.profile }}/${{ env.binary }} linux/
           strip linux/${{ env.binary }}
           if [ "${{ env.package_assets }}" != "false" ]
           then
@@ -99,7 +99,7 @@ jobs:
         if: matrix.target.channel == 'windows'
         run: |
           mkdir windows
-          cp target/${{ matrix.target.target }}/${{ matrix.profile }}/${{ env.binary }}.exe windows/
+          cp target/${{ matrix.target.target }}/${{ matrix.target.profile }}/${{ env.binary }}.exe windows/
           if ( -not "${{ env.package_assets }}" -eq "false" )
           {
             cp -r assets windows/
@@ -108,7 +108,7 @@ jobs:
         if: matrix.target.channel == 'wasm'
         run: |
           mkdir tmp
-          wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir tmp --target web target/${{ matrix.target.target }}/${{ matrix.profile }}/${{ env.binary }}.wasm
+          wasm-bindgen --no-typescript --out-name ${{ env.binary }} --out-dir tmp --target web target/${{ matrix.target.target }}/${{ matrix.target.profile }}/${{ env.binary }}.wasm
           wasm-opt -Oz tmp/${{ env.binary }}_bg.wasm --output wasm/${{ env.binary }}_bg.wasm
           if [ "${{ env.package_assets }}" != "false" ]
           then
