@@ -1,0 +1,33 @@
+[package]
+name = "lain"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = "0.8"
+
+bevy_easings = "0.8"
+bevy_embedded_assets = { version = "0.4", optional = true }
+bevy_jornet = "0.1"
+bevy_ninepatch = "0.8"
+bevy_asset_loader = "0.12"
+
+rand = "0.8"
+tracing = "0.1"
+
+[patch.crates-io]
+wgpu = { git = "https://github.com/mockersf/wgpu/", branch = "unconditional-clear-workaround" }
+# bevy_asset_loader = { path = "forks/bevy_asset_loader/bevy_asset_loader" }
+
+
+[features]
+default = []
+hot = [ "bevy/filesystem_watcher" ]
+release = [ "bundled", "tracing/release_max_level_warn" ]
+bundled = [ "bevy_embedded_assets" ]
+trace = [ "bevy/trace", "bevy/trace_tracy" ]
+
+[profile.dev.package."*"]
+opt-level = 3
