@@ -30,10 +30,13 @@ bevy_asset_loader = "0.12"
 rand = "0.8"
 tracing = "0.1"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+bevy = { version = "0.8", features = [
+  "x11",
+] }
+
 [patch.crates-io]
 wgpu = { git = "https://github.com/mockersf/wgpu/", branch = "unconditional-clear-workaround" }
-# bevy_asset_loader = { path = "forks/bevy_asset_loader/bevy_asset_loader" }
-
 
 [features]
 default = []
