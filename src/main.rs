@@ -87,7 +87,7 @@ pub enum GameState {
     Exit,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Screen {
     Splash,
     Menu,
