@@ -1,2 +1,5 @@
 /target
 /candidates
+/wasm/*.ts
+/wasm/*.js
+/wasm/*.wasm

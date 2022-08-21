@@ -2,11 +2,24 @@
 name = "lain"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.8"
+bevy = { version = "0.8", default-features = false, features = [
+    "bevy_asset",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_scene",
+    "bevy_gltf",
+    "bevy_winit",
+    "bevy_render",
+    "bevy_text",
+    "png",
+    "animation",
+    "bevy_gilrs",
+] }
 
 bevy_easings = "0.8"
 bevy_embedded_assets = { version = "0.4", optional = true }
@@ -31,3 +44,9 @@ trace = [ "bevy/trace", "bevy/trace_tracy" ]
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
