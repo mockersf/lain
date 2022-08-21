@@ -1,6 +1,9 @@
-use std::f32::consts::FRAC_PI_2;
+use std::{f32::consts::FRAC_PI_2, time::Duration};
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    winit::{UpdateMode, WinitSettings},
+};
 
 use bevy_easings::Ease;
 
@@ -77,6 +80,13 @@ fn setup(
     mut gamepad_input: ResMut<Input<GamepadButton>>,
 ) {
     info!("Loading screen");
+
+    commands.insert_resource(WinitSettings {
+        focused_mode: UpdateMode::Reactive {
+            max_wait: Duration::from_secs_f32(1.0 / 30.0),
+        },
+        ..WinitSettings::desktop_app()
+    });
 
     mouse_button_input.clear();
     keyboard_input.clear();
