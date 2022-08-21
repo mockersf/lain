@@ -514,9 +514,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_jornet"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66c864f344677b89ecf42775ecffbaf17edfc38a13ce47d3f3917cedee6bb016"
+checksum = "f224b6152500d392bc333289762f074bca51aa13e3af5dfb9c335d317a3eef3b"
 dependencies = [
  "bevy",
  "hex",
