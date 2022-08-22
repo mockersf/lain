@@ -88,41 +88,41 @@ pub struct MenuAssets {
 fn done(world: &mut World) {
     info!("Done Loading Assets");
     unsafe {
-        let raw_menu_assets = world.remove_resource_unchecked::<RawMenuAssets>().unwrap();
-        let zombie_assets = world.get_resource_unchecked_mut::<ZombieAssets>().unwrap();
+        {
+            let raw_menu_assets = world.remove_resource_unchecked::<RawMenuAssets>().unwrap();
+            let mut nine_patches = world
+                .get_resource_unchecked_mut::<Assets<bevy_ninepatch::NinePatchBuilder<()>>>()
+                .unwrap();
+            let mut buttons = world
+                .get_resource_unchecked_mut::<Assets<crate::ui::button::Button>>()
+                .unwrap();
+            let np = bevy_ninepatch::NinePatchBuilder::by_margins(10, 30, 10, 10);
+            let panel_handle = (nine_patches.add(np), raw_menu_assets.panel_texture_handle);
+            let button = crate::ui::button::Button::setup(
+                &mut nine_patches,
+                raw_menu_assets.button_texture_handle,
+            );
+            let button_handle = buttons.add(button);
+            world.insert_resource(MenuAssets {
+                selection_handle: raw_menu_assets.selection_handle,
+                font_main_handle: raw_menu_assets.font_main_handle,
+                font_sub_handle: raw_menu_assets.font_sub_handle,
+                panel_handle,
+                button_handle,
+            });
+        }
 
-        let mut nine_patches = world
-            .get_resource_unchecked_mut::<Assets<bevy_ninepatch::NinePatchBuilder<()>>>()
-            .unwrap();
-        let mut scenes = world.get_resource_unchecked_mut::<Assets<Scene>>().unwrap();
-        let gltfs = world.get_resource::<Assets<Gltf>>().unwrap();
-        let mut buttons = world
-            .get_resource_unchecked_mut::<Assets<crate::ui::button::Button>>()
-            .unwrap();
-
-        let np = bevy_ninepatch::NinePatchBuilder::by_margins(10, 30, 10, 10);
-        let panel_handle = (nine_patches.add(np), raw_menu_assets.panel_texture_handle);
-
-        let scene = scenes.get_mut(&zombie_assets.mutant).unwrap();
-        let animations = gltfs.get(&zombie_assets.animations).unwrap();
-        let mut player = AnimationPlayer::default();
-        player
-            .play(animations.named_animations["Walk3"].clone_weak())
-            .repeat();
-        scene.world.entity_mut(Entity::from_raw(1)).insert(player);
-
-        let button = crate::ui::button::Button::setup(
-            &mut nine_patches,
-            raw_menu_assets.button_texture_handle,
-        );
-        let button_handle = buttons.add(button);
-
-        world.insert_resource(MenuAssets {
-            selection_handle: raw_menu_assets.selection_handle,
-            font_main_handle: raw_menu_assets.font_main_handle,
-            font_sub_handle: raw_menu_assets.font_sub_handle,
-            panel_handle,
-            button_handle,
-        });
+        {
+            let zombie_assets = world.get_resource_unchecked_mut::<ZombieAssets>().unwrap();
+            let mut scenes = world.get_resource_unchecked_mut::<Assets<Scene>>().unwrap();
+            let gltfs = world.get_resource::<Assets<Gltf>>().unwrap();
+            let scene = scenes.get_mut(&zombie_assets.mutant).unwrap();
+            let animations = gltfs.get(&zombie_assets.animations).unwrap();
+            let mut player = AnimationPlayer::default();
+            player
+                .play(animations.named_animations["Walk3"].clone_weak())
+                .repeat();
+            scene.world.entity_mut(Entity::from_raw(1)).insert(player);
+        }
     }
 }
