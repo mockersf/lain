@@ -2,11 +2,17 @@
 #![windows_subsystem = "windows"]
 #![allow(clippy::needless_update, clippy::too_many_arguments)]
 
+use std::f32::consts::FRAC_PI_4;
+
 use bevy::{app::AppExit, prelude::*, render::texture::ImageSettings};
+use bevy_jornet::JornetPlugin;
 
 mod assets;
+mod heightmap;
 mod menu;
 mod splash;
+mod terra;
+mod terrain_spawner;
 mod ui;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cfg!(debug_assertions) {
         builder.insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::INFO,
-            filter: "gfx_backend_metal=warn,wgpu_core=warn,bevy_render=info".to_string(),
+            filter: "gfx_backend_metal=warn,wgpu_core=warn,bevy_render=info,lain=debug".to_string(),
         });
     } else {
         builder.insert_resource(bevy::log::LogSettings {
@@ -55,6 +61,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     builder
         // .insert_resource(ReportExecutionOrderAmbiguities)
+        .add_plugin(JornetPlugin::with_leaderboard(
+            "8e6c264a-a372-4e65-a994-e236db4dba55",
+            "daf527c7-eca7-42b8-86b9-dddd1d93eaf1",
+        ))
         // game management
         .add_startup_system(general_setup)
         .insert_resource(GameScreen::default())
@@ -67,6 +77,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::assets::AssetPlugin)
         .add_plugin(crate::splash::Plugin)
         .add_plugin(crate::menu::Plugin)
+        .add_plugin(crate::terrain_spawner::TerrainSpawnerPlugin)
+        .add_plugin(crate::terra::TerraPlugin)
+        .add_system(animate_light_direction)
         // .add_plugin(crate::about::Plugin)
         // .add_plugin(crate::game::Plugin)
         // .add_plugin(crate::lost::Plugin)
@@ -121,4 +134,18 @@ fn general_setup(mut commands: Commands) {
 
 fn exit(mut app_exit_events: EventWriter<AppExit>) {
     app_exit_events.send(AppExit);
+}
+
+fn animate_light_direction(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<DirectionalLight>>,
+) {
+    for mut transform in &mut query {
+        transform.rotation = Quat::from_euler(
+            EulerRot::ZYX,
+            0.0,
+            time.seconds_since_startup() as f32 * std::f32::consts::TAU / 1000.0,
+            -FRAC_PI_4,
+        );
+    }
 }

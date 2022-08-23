@@ -1,4 +1,4 @@
-use std::{f32::consts::FRAC_PI_2, time::Duration};
+use std::time::Duration;
 
 use bevy::{
     prelude::*,
@@ -281,15 +281,28 @@ fn setup(
             ..default()
         })
         .insert(ScreenTag);
-    commands
-        .spawn_bundle(DirectionalLightBundle {
-            transform: Transform::from_rotation(Quat::from_axis_angle(
-                Vec3::new(0.5, 0.5, 0.5),
-                FRAC_PI_2,
-            )),
+    let size = 5.0;
+    commands.spawn_bundle(DirectionalLightBundle {
+        transform: Transform {
+            rotation: Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -std::f32::consts::FRAC_PI_4),
             ..default()
-        })
-        .insert(ScreenTag);
+        },
+        directional_light: DirectionalLight {
+            shadows_enabled: true,
+            shadow_projection: OrthographicProjection {
+                left: -size,
+                right: size,
+                bottom: -size,
+                top: size,
+                near: -size,
+                far: size,
+                ..Default::default()
+            },
+            illuminance: 20000.0,
+            ..default()
+        },
+        ..default()
+    });
 
     screen.first_load = false;
 }
