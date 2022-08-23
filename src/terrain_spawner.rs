@@ -77,6 +77,7 @@ struct HandledLot {
     color: Handle<StandardMaterial>,
 }
 
+#[allow(clippy::type_complexity)]
 fn fill_empty_lots(
     mut commands: Commands,
     mut lots: Query<(Entity, &mut EmptyLot)>,
@@ -148,6 +149,7 @@ fn fill_empty_lots(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn cleanup_lots(
     mut commands: Commands,
     lots: Query<Entity, (Without<EmptyLot>, Without<Transform>, Without<Children>)>,
