@@ -1,9 +1,6 @@
 use bevy::{
     prelude::{default, Assets, BuildChildren, Color, Commands, NodeBundle, Res, SystemSet},
-    ui::{
-        AlignContent, AlignItems, FlexDirection, JustifyContent, PositionType, Size, Style,
-        UiColor, UiRect, Val,
-    },
+    ui::{FlexDirection, JustifyContent, PositionType, Size, Style, UiColor, UiRect, Val},
 };
 use tracing::info;
 
