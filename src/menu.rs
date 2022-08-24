@@ -74,7 +74,7 @@ fn setup(
     mut screen: ResMut<Screen>,
     menu_handles: Res<MenuAssets>,
     zombie_handles: Res<ZombieAssets>,
-    buttons: Res<Assets<crate::ui::button::Button>>,
+    buttons: Res<Assets<crate::ui_helper::button::Button>>,
     mut mouse_button_input: ResMut<Input<MouseButton>>,
     mut keyboard_input: ResMut<Input<KeyCode>>,
     mut gamepad_input: ResMut<Input<GamepadButton>>,
@@ -131,7 +131,7 @@ fn setup(
                     "Lain".to_string(),
                     TextStyle {
                         font: font.clone(),
-                        color: crate::ui::ColorScheme::TEXT,
+                        color: crate::ui_helper::ColorScheme::TEXT,
                         font_size: 75.,
                         ..Default::default()
                     },
@@ -434,7 +434,7 @@ fn button_system(
         (
             &Button,
             &Interaction,
-            &crate::ui::button::ButtonId<MenuButton>,
+            &crate::ui_helper::button::ButtonId<MenuButton>,
         ),
         Changed<Interaction>,
     >,

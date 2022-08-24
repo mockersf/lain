@@ -10,7 +10,7 @@ use bevy::{
 use bracket_noise::prelude::*;
 use tracing::instrument;
 
-use crate::terra::Plane;
+use crate::game::terra::Plane;
 
 const WATER_LEVEL: f32 = -10.0;
 const PLATEAU_LEVEL: f32 = 0.25;
@@ -19,7 +19,7 @@ pub(crate) const HIGH_DEF: u32 = 40;
 const FLATTENING: f32 = 9.0;
 
 pub(crate) struct HeightMap {
-    seeds: crate::terra::TerraNoises,
+    seeds: crate::game::terra::TerraNoises,
     x: f32,
     y: f32,
 }
@@ -54,7 +54,7 @@ impl HeightMap {
         x: f32,
         y: f32,
         plane: Plane,
-        seeds: crate::terra::TerraNoises,
+        seeds: crate::game::terra::TerraNoises,
     ) -> Self {
         Self { seeds, x, y }
     }

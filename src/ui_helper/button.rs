@@ -67,7 +67,7 @@ impl Button {
                     TextStyle {
                         font,
                         font_size,
-                        color: crate::ui::ColorScheme::TEXT_DARK,
+                        color: crate::ui_helper::ColorScheme::TEXT_DARK,
                         ..Default::default()
                     },
                 ),

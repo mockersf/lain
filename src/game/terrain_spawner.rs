@@ -14,8 +14,8 @@ use interpolation::Ease;
 
 use crate::{
     assets::BuildingAssets,
-    heightmap::LOW_DEF,
-    terra::{Plane, TerraNoises},
+    game::heightmap::{HeightMap, LOW_DEF},
+    game::terra::{Plane, TerraNoises},
     GameState, PlayingState,
 };
 
@@ -233,8 +233,7 @@ fn fill_empty_lots(
             let plane = *plane;
             AsyncComputeTaskPool::get()
                 .spawn(async move {
-                    let heightmap =
-                        crate::heightmap::HeightMap::build_heightmap(pos_x, pos_y, plane, noises);
+                    let heightmap = HeightMap::build_heightmap(pos_x, pos_y, plane, noises);
                     let terrain = heightmap.into_mesh_and_texture();
 
                     tx.send(InTransitLot {

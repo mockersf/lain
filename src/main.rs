@@ -7,15 +7,13 @@ use std::f32::consts::FRAC_PI_4;
 use bevy::{app::AppExit, prelude::*, render::texture::ImageSettings};
 use bevy_jornet::JornetPlugin;
 use bevy_mod_raycast::{DefaultRaycastingPlugin, RayCastSource};
-use terrain_spawner::RaycastSet;
+use game::terrain_spawner::RaycastSet;
 
 mod assets;
-mod heightmap;
+mod game;
 mod menu;
 mod splash;
-mod terra;
-mod terrain_spawner;
-mod ui;
+mod ui_helper;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = App::new();
@@ -70,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // game management
         .add_startup_system(general_setup)
         // ui
-        .add_plugin(crate::ui::button::Plugin)
+        .add_plugin(crate::ui_helper::button::Plugin)
         .add_plugin(DefaultRaycastingPlugin::<RaycastSet>::default())
         // screens
         .add_state(GameState::Splash)
@@ -80,9 +78,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::assets::AssetPlugin)
         .add_plugin(crate::splash::Plugin)
         .add_plugin(crate::menu::Plugin)
-        .add_plugin(crate::terrain_spawner::TerrainSpawnerPlugin)
-        .add_plugin(crate::terra::TerraPlugin)
-        .add_plugin(crate::terrain_spawner::SwitchingPlanePlugin)
+        .add_plugin(crate::game::terrain_spawner::TerrainSpawnerPlugin)
+        .add_plugin(crate::game::terra::TerraPlugin)
+        .add_plugin(crate::game::terrain_spawner::SwitchingPlanePlugin)
         .add_system(animate_light_direction)
         // .add_plugin(crate::about::Plugin)
         // .add_plugin(crate::game::Plugin)
