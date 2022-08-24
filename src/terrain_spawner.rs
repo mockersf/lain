@@ -90,7 +90,6 @@ impl Plugin for TerrainSpawnerPlugin {
                 SystemSet::on_update(GameState::Playing)
                     .with_system(move_camera)
                     .with_system(fill_empty_lots)
-                    .with_system(cleanup_lots)
                     .with_system(refresh_visible_lots.after(fill_empty_lots))
                     .with_system(cleanup_lots),
             );
