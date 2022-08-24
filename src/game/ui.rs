@@ -167,12 +167,12 @@ fn button_system(
             match (button_id.0, changed) {
                 (UiButtons::ZoomIn, _) => {
                     if camera.single().translation.y > 2.0 {
-                        camera.single_mut().translation.y -= time.delta_seconds();
+                        camera.single_mut().translation.y -= time.delta_seconds() * 2.0;
                     }
                 }
                 (UiButtons::ZoomOut, _) => {
                     if camera.single().translation.y < 20.0 {
-                        camera.single_mut().translation.y += time.delta_seconds();
+                        camera.single_mut().translation.y += time.delta_seconds() * 2.0;
                     }
                 }
                 (UiButtons::SwitchPlane, true) => {
@@ -193,7 +193,7 @@ fn button_system(
                     playing_state.set(PlayingState::Playing).unwrap();
                     button_id.0 = UiButtons::BuildTower;
                     for (mut text, button) in &mut text_query {
-                        if button.0 == UiButtons::Cancel {
+                        if button.0 == UiButtons::BuildTower {
                             text.sections[0].value = UiButtons::BuildTower.into()
                         }
                     }
