@@ -47,7 +47,8 @@ impl Plugin for AssetPlugin {
                 LoadingState::new(AssetState::Loading)
                     .continue_to_state(AssetState::Done)
                     .with_collection::<RawMenuAssets>()
-                    .with_collection::<ZombieAssets>(),
+                    .with_collection::<ZombieAssets>()
+                    .with_collection::<BuildingAssets>(),
             )
             .add_system_set(
                 SystemSet::on_enter(AssetState::Done).with_system(done.exclusive_system()),
@@ -75,6 +76,12 @@ pub struct ZombieAssets {
     pub animations: Handle<Gltf>,
     #[asset(path = "zombies/all-in-one.glb#Scene0")]
     pub mutant: Handle<Scene>,
+}
+
+#[derive(AssetCollection)]
+pub struct BuildingAssets {
+    #[asset(path = "buildings/detail_crystalLarge.glb#Scene0")]
+    pub crystal: Handle<Scene>,
 }
 
 pub struct MenuAssets {

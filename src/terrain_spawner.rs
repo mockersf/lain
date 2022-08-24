@@ -11,6 +11,8 @@ use crossbeam_channel::{Receiver, Sender};
 use interpolation::Ease;
 
 use crate::{
+    assets::BuildingAssets,
+    heightmap::LOW_DEF,
     terra::{Plane, TerraNoises},
     GameState, PlayingState,
 };
@@ -63,8 +65,27 @@ impl Plugin for TerrainSpawnerPlugin {
     fn build(&self, app: &mut App) {
         let (tx, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
+        let mut map = BuildingMap::default();
+        map.lots.insert(
+            (IVec2::new(0, 0), Plane::Material),
+            vec![(
+                LOW_DEF as i32 / 2,
+                LOW_DEF as i32 / 2,
+                BuildingType::Crystal,
+            )],
+        );
+        map.lots.insert(
+            (IVec2::new(0, 0), Plane::Ethereal),
+            vec![(
+                LOW_DEF as i32 / 2,
+                LOW_DEF as i32 / 2,
+                BuildingType::Crystal,
+            )],
+        );
+
         app.insert_resource(MyChannel(tx, rx))
             .init_resource::<VisibleLots>()
+            .insert_resource(map)
             .insert_resource(Plane::Material)
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_camera))
             .add_system_set(
@@ -96,6 +117,16 @@ struct HandledLot {
     color: Handle<StandardMaterial>,
 }
 
+#[derive(Debug)]
+enum BuildingType {
+    Crystal,
+}
+
+#[derive(Default)]
+struct BuildingMap {
+    lots: HashMap<(IVec2, Plane), Vec<(i32, i32, BuildingType)>>,
+}
+
 #[allow(clippy::type_complexity)]
 fn fill_empty_lots(
     mut commands: Commands,
@@ -111,6 +142,8 @@ fn fill_empty_lots(
     mut in_transit: Local<usize>,
     plane: Res<Plane>,
     playing_state: Res<State<PlayingState>>,
+    map: Res<BuildingMap>,
+    building_assets: Res<BuildingAssets>,
 ) {
     for (entity, mut position, mut transform) in lots.iter_mut() {
         if let Some(mesh) = mesh_cache.get(&(IVec2::new(position.x, position.z), *plane)) {
@@ -124,6 +157,29 @@ fn fill_empty_lots(
                             transform: Transform::from_xyz(0.0, 0.035, 0.0),
                             ..default()
                         });
+                        if let Some(building_lot) =
+                            map.lots.get(&(IVec2::new(position.x, position.z), *plane))
+                        {
+                            for building in building_lot {
+                                match building.2 {
+                                    BuildingType::Crystal => lot.spawn_bundle(SceneBundle {
+                                        scene: building_assets.crystal.clone_weak(),
+                                        transform: Transform {
+                                            scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                            translation: Vec3::new(
+                                                (building.0 - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                                0.03,
+                                                (building.1 - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                            ),
+                                            ..default()
+                                        },
+                                        ..default()
+                                    }),
+                                };
+                            }
+                        }
                     })
                     .insert(FilledLot {
                         x: position.x,
