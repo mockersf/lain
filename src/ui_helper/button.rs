@@ -10,6 +10,9 @@ pub(crate) struct Button {
 #[derive(Component)]
 pub(crate) struct ButtonId<T: Into<String>>(pub(crate) T);
 
+#[derive(Component)]
+pub(crate) struct ButtonText<T: Into<String>>(pub(crate) T);
+
 impl Button {
     pub(crate) fn setup(
         nine_patches: &mut Assets<bevy_ninepatch::NinePatchBuilder>,
@@ -74,7 +77,7 @@ impl Button {
                 focus_policy: bevy::ui::FocusPolicy::Pass,
                 ..Default::default()
             })
-            .insert(bevy::ui::FocusPolicy::Pass)
+            .insert_bundle((bevy::ui::FocusPolicy::Pass, ButtonText(button)))
             .id();
 
         let patch_entity = commands

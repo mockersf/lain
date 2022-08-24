@@ -2,7 +2,6 @@ use std::f32::consts::PI;
 
 use bevy::{
     ecs::component::SparseStorage,
-    pbr::NotShadowCaster,
     prelude::*,
     tasks::AsyncComputeTaskPool,
     utils::{Entry, HashMap},
@@ -85,6 +84,7 @@ impl Plugin for TerrainSpawnerPlugin {
 
         app.insert_resource(MyChannel(tx, rx))
             .init_resource::<VisibleLots>()
+            .init_resource::<CursorPosition>()
             .insert_resource(map)
             .insert_resource(Plane::Material)
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_camera))
@@ -99,35 +99,17 @@ impl Plugin for TerrainSpawnerPlugin {
     }
 }
 
-fn setup_camera(
-    mut commands: Commands,
-    mut camera: Query<&mut Transform, With<Camera>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let mut transform = camera.single_mut();
-    *transform = Transform::from_xyz(0.0, 4.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Box::new(
-                1.0 / LOW_DEF as f32,
-                0.7,
-                1.0 / LOW_DEF as f32,
-            ))),
-            material: materials.add(StandardMaterial {
-                base_color: Color::rgba(0.2, 1.0, 0.2, 0.5),
-                alpha_mode: AlphaMode::Blend,
-                unlit: true,
-                ..default()
-            }),
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-            ..Default::default()
-        })
-        .insert_bundle((CursorSelection, NotShadowCaster));
+#[derive(Default)]
+pub(crate) struct CursorPosition {
+    pub(crate) world: Vec3,
+    pub(crate) map: IVec2,
+    pub(crate) lot: IVec2,
 }
 
-#[derive(Component)]
-struct CursorSelection;
+fn setup_camera(mut camera: Query<&mut Transform, With<Camera>>) {
+    let mut transform = camera.single_mut();
+    *transform = Transform::from_xyz(0.0, 4.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
+}
 
 struct InTransitLot {
     mesh: Mesh,
@@ -442,12 +424,15 @@ fn intersection(
     query: Query<&Intersection<RaycastSet>>,
     mut cursor: EventReader<CursorMoved>,
     mut pick_source: Query<&mut RayCastSource<RaycastSet>>,
-    mut cursor_position: Query<&mut Transform, With<CursorSelection>>,
+    mut cursor_position: ResMut<CursorPosition>,
 ) {
     for intersection in &query {
         if let Some(position) = intersection.position() {
-            let position = map_to_world(world_to_map(Vec2::new(position.x, position.z)));
-            cursor_position.single_mut().translation = Vec3::new(position.x, 0.05, position.y);
+            let position = world_to_map(Vec2::new(position.x, position.z));
+            cursor_position.map = position.0;
+            cursor_position.lot = position.1;
+            let position = map_to_world(position);
+            cursor_position.world = Vec3::new(position.x, 0.05, position.y);
         }
     }
     let cursor_position = match cursor.iter().last() {

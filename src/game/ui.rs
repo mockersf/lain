@@ -3,6 +3,7 @@ use bevy::{
         default, Assets, BuildChildren, Button, Camera, Changed, Color, Commands, NodeBundle,
         Query, Res, ResMut, State, SystemSet, Transform, With,
     },
+    text::Text,
     time::Time,
     ui::{
         FlexDirection, Interaction, JustifyContent, PositionType, Size, Style, UiColor, UiRect, Val,
@@ -10,7 +11,11 @@ use bevy::{
 };
 use tracing::info;
 
-use crate::{assets::UiAssets, GameState};
+use crate::{
+    assets::UiAssets,
+    ui_helper::button::{ButtonId, ButtonText},
+    GameState,
+};
 
 use super::PlayingState;
 
@@ -23,12 +28,13 @@ impl bevy::app::Plugin for Plugin {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum UiButtons {
     ZoomIn,
     ZoomOut,
     SwitchPlane,
     BuildTower,
+    Cancel,
 }
 
 impl From<UiButtons> for String {
@@ -42,6 +48,7 @@ impl From<UiButtons> for String {
             }
             UiButtons::SwitchPlane => "Switch Plane".to_string(),
             UiButtons::BuildTower => "Build".to_string(),
+            UiButtons::Cancel => "Cancel".to_string(),
         }
     }
 }
@@ -147,13 +154,15 @@ fn button_system(
     mut interaction_query: Query<(
         &Button,
         &Interaction,
-        &crate::ui_helper::button::ButtonId<UiButtons>,
+        &mut ButtonId<UiButtons>,
         Changed<Interaction>,
     )>,
+    mut text_query: Query<(&mut Text, &ButtonText<UiButtons>)>,
     mut camera: Query<&mut Transform, With<Camera>>,
     time: Res<Time>,
+    mut playing_state: ResMut<State<PlayingState>>,
 ) {
-    for (_button, interaction, button_id, changed) in interaction_query.iter_mut() {
+    for (_button, interaction, mut button_id, changed) in interaction_query.iter_mut() {
         if *interaction == Interaction::Clicked {
             match (button_id.0, changed) {
                 (UiButtons::ZoomIn, _) => {
@@ -166,8 +175,29 @@ fn button_system(
                         camera.single_mut().translation.y += time.delta_seconds();
                     }
                 }
-                (UiButtons::SwitchPlane, true) => todo!(),
-                (UiButtons::BuildTower, true) => todo!(),
+                (UiButtons::SwitchPlane, true) => {
+                    if *playing_state.current() != PlayingState::SwitchingPlane {
+                        playing_state.set(PlayingState::SwitchingPlane).unwrap();
+                    }
+                }
+                (UiButtons::BuildTower, true) => {
+                    playing_state.set(PlayingState::Building).unwrap();
+                    button_id.0 = UiButtons::Cancel;
+                    for (mut text, button) in &mut text_query {
+                        if button.0 == UiButtons::BuildTower {
+                            text.sections[0].value = UiButtons::Cancel.into()
+                        }
+                    }
+                }
+                (UiButtons::Cancel, true) => {
+                    playing_state.set(PlayingState::Playing).unwrap();
+                    button_id.0 = UiButtons::BuildTower;
+                    for (mut text, button) in &mut text_query {
+                        if button.0 == UiButtons::Cancel {
+                            text.sections[0].value = UiButtons::BuildTower.into()
+                        }
+                    }
+                }
                 _ => (),
             }
         }
