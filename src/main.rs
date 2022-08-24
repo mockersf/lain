@@ -83,9 +83,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::game::switcher::Plugin)
         .add_plugin(crate::game::ui::Plugin)
         .add_system(animate_light_direction)
-        // .add_plugin(crate::about::Plugin)
-        // .add_plugin(crate::game::Plugin)
-        // .add_plugin(crate::lost::Plugin)
         .run();
 
     Ok(())
