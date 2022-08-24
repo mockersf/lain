@@ -14,11 +14,11 @@ use crate::terra::Plane;
 
 const WATER_LEVEL: f32 = -10.0;
 const PLATEAU_LEVEL: f32 = 0.25;
-pub const LOW_DEF: u32 = 5;
-pub const HIGH_DEF: u32 = 40;
+pub(crate) const LOW_DEF: u32 = 5;
+pub(crate) const HIGH_DEF: u32 = 40;
 const FLATTENING: f32 = 9.0;
 
-pub struct HeightMap {
+pub(crate) struct HeightMap {
     seeds: crate::terra::TerraNoises,
     x: f32,
     y: f32,
@@ -50,7 +50,12 @@ impl CachedNoise {
 
 impl HeightMap {
     #[instrument(skip(seeds))]
-    pub fn build_heightmap(x: f32, y: f32, plane: Plane, seeds: crate::terra::TerraNoises) -> Self {
+    pub(crate) fn build_heightmap(
+        x: f32,
+        y: f32,
+        plane: Plane,
+        seeds: crate::terra::TerraNoises,
+    ) -> Self {
         Self { seeds, x, y }
     }
 
@@ -120,7 +125,7 @@ impl HeightMap {
     }
 
     #[instrument(skip(self))]
-    pub fn into_mesh_and_texture(self) -> Terrain {
+    pub(crate) fn into_mesh_and_texture(self) -> Terrain {
         let (material_elevation_noise, material_simplified_elevation_noise) =
             Self::get_noises(self.seeds.material_seed as u64);
 
@@ -266,7 +271,7 @@ impl HeightMap {
             positions,
             normals,
             uvs,
-            simplified_positions,
+            _simplified_positions,
             material_colors,
             ethereal_colors,
             metallic_roughness,
@@ -276,11 +281,11 @@ impl HeightMap {
         );
         let mesh = vertices_as_mesh(positions, normals, uvs, HIGH_DEF);
 
-        let simplified_mesh = vertices_as_mesh(simplified_positions, vec![], vec![], LOW_DEF);
+        // let simplified_mesh = vertices_as_mesh(simplified_positions, vec![], vec![], LOW_DEF);
 
         Terrain {
             mesh,
-            simplified_mesh,
+            // simplified_mesh,
             material_color: Image::new(
                 Extent3d {
                     width: LOW_DEF + 1,
@@ -381,10 +386,10 @@ fn vertices_as_mesh(
     mesh
 }
 
-pub struct Terrain {
-    pub simplified_mesh: Mesh,
-    pub mesh: Mesh,
-    pub material_color: Image,
-    pub ethereal_color: Image,
-    pub metallic_roughness: Image,
+pub(crate) struct Terrain {
+    // pub(crate) simplified_mesh: Mesh,
+    pub(crate) mesh: Mesh,
+    pub(crate) material_color: Image,
+    pub(crate) ethereal_color: Image,
+    pub(crate) metallic_roughness: Image,
 }

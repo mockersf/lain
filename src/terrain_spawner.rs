@@ -27,7 +27,7 @@ const CHANNEL_SIZE: usize = 1;
 const CHANNEL_SIZE: usize = 20;
 
 #[derive(Debug)]
-pub struct EmptyLot {
+pub(crate) struct EmptyLot {
     x: i32,
     z: i32,
     offscreen: bool,
@@ -39,7 +39,7 @@ impl Component for EmptyLot {
 }
 
 impl EmptyLot {
-    pub fn new(position: IVec2, offscreen: bool) -> Self {
+    pub(crate) fn new(position: IVec2, offscreen: bool) -> Self {
         EmptyLot {
             x: position.x,
             z: position.y,
@@ -49,7 +49,7 @@ impl EmptyLot {
     }
 }
 
-pub struct FilledLot {
+pub(crate) struct FilledLot {
     x: i32,
     z: i32,
     plane: Plane,
@@ -59,7 +59,7 @@ impl Component for FilledLot {
     type Storage = SparseStorage;
 }
 
-pub struct TerrainSpawnerPlugin;
+pub(crate) struct TerrainSpawnerPlugin;
 
 struct MyChannel(Sender<InTransitLot>, Receiver<InTransitLot>);
 
@@ -300,7 +300,7 @@ fn cleanup_lots(
 }
 
 #[derive(Default)]
-pub struct VisibleLots(HashMap<IVec2, (Entity, Plane)>);
+pub(crate) struct VisibleLots(HashMap<IVec2, (Entity, Plane)>);
 
 fn refresh_visible_lots(
     mut commands: Commands,
@@ -420,7 +420,7 @@ fn move_camera(
     }
 }
 
-pub struct SwitchingPlanePlugin;
+pub(crate) struct SwitchingPlanePlugin;
 impl Plugin for SwitchingPlanePlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
@@ -489,7 +489,7 @@ fn clear(mut commands: Commands, lots: Query<(Entity, &FilledLot)>, plane: Res<P
     }
 }
 
-pub struct RaycastSet;
+pub(crate) struct RaycastSet;
 
 fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
     (

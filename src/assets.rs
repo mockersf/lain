@@ -1,7 +1,7 @@
 use bevy::{asset::Asset, ecs::all_tuples, gltf::Gltf, prelude::*};
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 
-pub trait CloneWeak {
+pub(crate) trait CloneWeak {
     fn clone_weak(&self) -> Self;
 }
 
@@ -33,12 +33,12 @@ macro_rules! impl_tuple_handle_clone_weak {
 all_tuples!(impl_tuple_handle_clone_weak, 0, 15, H);
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
-pub enum AssetState {
+pub(crate) enum AssetState {
     Loading,
     Done,
 }
 
-pub struct AssetPlugin;
+pub(crate) struct AssetPlugin;
 
 impl Plugin for AssetPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
@@ -62,8 +62,8 @@ struct RawMenuAssets {
     selection_handle: Handle<Image>,
     #[asset(path = "fonts/kenvector_future.ttf")]
     font_main_handle: Handle<Font>,
-    #[asset(path = "fonts/mandrill.ttf")]
-    font_sub_handle: Handle<Font>,
+    // #[asset(path = "fonts/mandrill.ttf")]
+    // font_sub_handle: Handle<Font>,
     #[asset(path = "ui/panel_blue.png")]
     panel_texture_handle: Handle<Image>,
     #[asset(path = "ui/buttonLong_beige.png")]
@@ -71,25 +71,25 @@ struct RawMenuAssets {
 }
 
 #[derive(AssetCollection)]
-pub struct ZombieAssets {
+pub(crate) struct ZombieAssets {
     #[asset(path = "zombies/all-in-one.glb")]
-    pub animations: Handle<Gltf>,
+    pub(crate) animations: Handle<Gltf>,
     #[asset(path = "zombies/all-in-one.glb#Scene0")]
-    pub mutant: Handle<Scene>,
+    pub(crate) mutant: Handle<Scene>,
 }
 
 #[derive(AssetCollection)]
-pub struct BuildingAssets {
+pub(crate) struct BuildingAssets {
     #[asset(path = "buildings/detail_crystalLarge.glb#Scene0")]
-    pub crystal: Handle<Scene>,
+    pub(crate) crystal: Handle<Scene>,
 }
 
-pub struct MenuAssets {
-    pub selection_handle: Handle<Image>,
-    pub font_main_handle: Handle<Font>,
-    pub font_sub_handle: Handle<Font>,
-    pub panel_handle: (Handle<bevy_ninepatch::NinePatchBuilder<()>>, Handle<Image>),
-    pub button_handle: Handle<crate::ui::button::Button>,
+pub(crate) struct MenuAssets {
+    pub(crate) selection_handle: Handle<Image>,
+    pub(crate) font_main_handle: Handle<Font>,
+    // pub(crate) font_sub_handle: Handle<Font>,
+    pub(crate) panel_handle: (Handle<bevy_ninepatch::NinePatchBuilder<()>>, Handle<Image>),
+    pub(crate) button_handle: Handle<crate::ui::button::Button>,
 }
 
 fn done(world: &mut World) {
@@ -113,7 +113,7 @@ fn done(world: &mut World) {
             world.insert_resource(MenuAssets {
                 selection_handle: raw_menu_assets.selection_handle,
                 font_main_handle: raw_menu_assets.font_main_handle,
-                font_sub_handle: raw_menu_assets.font_sub_handle,
+                // font_sub_handle: raw_menu_assets.font_sub_handle,
                 panel_handle,
                 button_handle,
             });

@@ -69,7 +69,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         // game management
         .add_startup_system(general_setup)
-        .insert_resource(GameScreen::default())
         // ui
         .add_plugin(crate::ui::button::Plugin)
         .add_plugin(DefaultRaycastingPlugin::<RaycastSet>::default())
@@ -93,48 +92,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub const STAGE: &str = "game";
-
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
-pub enum GameState {
+pub(crate) enum GameState {
     Splash,
     Menu,
     About,
     Playing,
-    Paused,
-    Lost,
+    // Paused,
+    // Lost,
     Exit,
 }
 
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
-pub enum PlayingState {
+pub(crate) enum PlayingState {
     Playing,
     SwitchingPlane,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Screen {
-    Splash,
-    Menu,
-    About,
-    Game,
-    Exit,
-    Lost,
-}
-
-#[derive(Debug, Default)]
-pub struct GameScreen {
-    pub highscore: u32,
-    pub highround: u16,
-}
-
-impl GameScreen {
-    pub fn is_new_highscore(&self, score: u32) -> bool {
-        self.highscore != 0 && score > self.highscore
-    }
-    pub fn is_new_highround(&self, round: u16) -> bool {
-        self.highround != 0 && round > self.highround
-    }
 }
 
 fn general_setup(mut commands: Commands) {

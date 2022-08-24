@@ -2,16 +2,16 @@ use bevy::prelude::*;
 
 #[derive(bevy::reflect::TypeUuid)]
 #[uuid = "5114f317-f6a6-4436-bd2a-cb380f5eb551"]
-pub struct Button {
+pub(crate) struct Button {
     nine_patch: Handle<bevy_ninepatch::NinePatchBuilder<()>>,
     texture: Handle<Image>,
 }
 
 #[derive(Component)]
-pub struct ButtonId<T: Into<String>>(pub T);
+pub(crate) struct ButtonId<T: Into<String>>(pub(crate) T);
 
 impl Button {
-    pub fn setup(
+    pub(crate) fn setup(
         nine_patches: &mut Assets<bevy_ninepatch::NinePatchBuilder>,
         texture_handle: Handle<Image>,
     ) -> Button {
@@ -22,7 +22,7 @@ impl Button {
         }
     }
 
-    pub fn add<T>(
+    pub(crate) fn add<T>(
         &self,
         commands: &mut Commands,
         width: f32,
@@ -144,7 +144,7 @@ fn button_effect(
     }
 }
 
-pub struct Plugin;
+pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<Button>().add_system(button_effect);
