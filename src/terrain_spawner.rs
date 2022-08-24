@@ -250,6 +250,7 @@ fn refresh_visible_lots(
             {
                 if !is_on_screen(screen_position) || *plane != *lot_plane {
                     if *playing_state.current() != PlayingState::SwitchingPlane {
+                        info!("despawning {} / {}", position.x, position.y);
                         commands.entity(*entity).despawn_recursive();
                     }
                     return false;
@@ -259,7 +260,7 @@ fn refresh_visible_lots(
         })
         .collect();
 
-    let span = 5;
+    let span = gt.translation().y as i32 + 1;
     for i in -span..span {
         for j in -(span / 2)..span {
             let position = IVec2::new(gt.translation().x as i32 + i, gt.translation().z as i32 + j);
@@ -268,6 +269,7 @@ fn refresh_visible_lots(
             {
                 if is_on_screen(screen_position) {
                     if let Entry::Vacant(vacant) = updated_lots.entry(position) {
+                        info!("spawning {} / {}", position.x, position.y);
                         vacant.insert((
                             commands
                                 .spawn_bundle((
@@ -313,6 +315,13 @@ fn move_camera(
         } else if input.pressed(KeyCode::Down) && transform.translation.z > -BORDER {
             moving = true;
             move_to.z = -1.0;
+        }
+        if input.pressed(KeyCode::A) && transform.translation.y < 20.0 {
+            moving = true;
+            move_to.y += 0.2;
+        } else if input.pressed(KeyCode::Q) && transform.translation.y > 2.0 {
+            moving = true;
+            move_to.y -= 0.2;
         }
         if moving {
             query.single_mut().translation += move_to.normalize() * move_by;
