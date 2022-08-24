@@ -89,7 +89,7 @@ pub(crate) struct MenuAssets {
     pub(crate) font_main_handle: Handle<Font>,
     // pub(crate) font_sub_handle: Handle<Font>,
     pub(crate) panel_handle: (Handle<bevy_ninepatch::NinePatchBuilder<()>>, Handle<Image>),
-    pub(crate) button_handle: Handle<crate::ui::button::Button>,
+    pub(crate) button_handle: Handle<crate::ui_helper::button::Button>,
 }
 
 fn done(world: &mut World) {
@@ -101,11 +101,11 @@ fn done(world: &mut World) {
                 .get_resource_unchecked_mut::<Assets<bevy_ninepatch::NinePatchBuilder<()>>>()
                 .unwrap();
             let mut buttons = world
-                .get_resource_unchecked_mut::<Assets<crate::ui::button::Button>>()
+                .get_resource_unchecked_mut::<Assets<crate::ui_helper::button::Button>>()
                 .unwrap();
             let np = bevy_ninepatch::NinePatchBuilder::by_margins(10, 30, 10, 10);
             let panel_handle = (nine_patches.add(np), raw_menu_assets.panel_texture_handle);
-            let button = crate::ui::button::Button::setup(
+            let button = crate::ui_helper::button::Button::setup(
                 &mut nine_patches,
                 raw_menu_assets.button_texture_handle,
             );
