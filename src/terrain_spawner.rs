@@ -85,11 +85,11 @@ fn setup_camera(mut camera: Query<&mut Transform, With<Camera>>) {
 
 struct InTransitLot {
     mesh: Mesh,
-    color: Image,
+    material_color: Image,
+    ethereal_color: Image,
     metallic_roughness: Image,
     x: i32,
     z: i32,
-    plane: Plane,
 }
 struct HandledLot {
     mesh: Handle<Mesh>,
@@ -151,11 +151,11 @@ fn fill_empty_lots(
 
                     tx.send(InTransitLot {
                         mesh: terrain.mesh,
-                        color: terrain.color,
+                        material_color: terrain.material_color,
+                        ethereal_color: terrain.ethereal_color,
                         metallic_roughness: terrain.metallic_roughness,
                         x: pos_x as i32,
                         z: pos_y as i32,
-                        plane,
                     })
                     .unwrap();
                 })
@@ -164,19 +164,39 @@ fn fill_empty_lots(
             *in_transit += 1;
         }
         for lot in channel.1.try_iter() {
-            let handled_lot = HandledLot {
-                mesh: meshes.add(lot.mesh),
+            let mesh_handle = meshes.add(lot.mesh);
+            let mr_texture = textures.add(lot.metallic_roughness);
+            let material_handled_lot = HandledLot {
+                mesh: mesh_handle.clone(),
                 color: materials.add(StandardMaterial {
                     base_color: bevy::render::color::Color::WHITE,
-                    base_color_texture: Some(textures.add(lot.color)),
+                    base_color_texture: Some(textures.add(lot.material_color)),
                     perceptual_roughness: 1.0,
                     metallic: 1.0,
-                    metallic_roughness_texture: Some(textures.add(lot.metallic_roughness)),
+                    metallic_roughness_texture: Some(mr_texture.clone()),
+                    ..Default::default()
+                }),
+            };
+            let ethereal_handled_lot = HandledLot {
+                mesh: mesh_handle,
+                color: materials.add(StandardMaterial {
+                    base_color: bevy::render::color::Color::WHITE,
+                    base_color_texture: Some(textures.add(lot.ethereal_color)),
+                    perceptual_roughness: 1.0,
+                    metallic: 1.0,
+                    metallic_roughness_texture: Some(mr_texture),
                     ..Default::default()
                 }),
             };
             *in_transit -= 1;
-            mesh_cache.insert((IVec2::new(lot.x, lot.z), lot.plane), handled_lot);
+            mesh_cache.insert(
+                (IVec2::new(lot.x, lot.z), Plane::Material),
+                material_handled_lot,
+            );
+            mesh_cache.insert(
+                (IVec2::new(lot.x, lot.z), Plane::Ethereal),
+                ethereal_handled_lot,
+            );
         }
     }
 }

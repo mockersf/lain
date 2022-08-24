@@ -22,7 +22,6 @@ pub struct HeightMap {
     seeds: crate::terra::TerraNoises,
     x: f32,
     y: f32,
-    plane: Plane,
 }
 
 struct CachedNoise {
@@ -52,7 +51,7 @@ impl CachedNoise {
 impl HeightMap {
     #[instrument(skip(seeds))]
     pub fn build_heightmap(x: f32, y: f32, plane: Plane, seeds: crate::terra::TerraNoises) -> Self {
-        Self { seeds, x, y, plane }
+        Self { seeds, x, y }
     }
 
     fn is_obstacle(elevation: f32) -> bool {
@@ -124,8 +123,6 @@ impl HeightMap {
     pub fn into_mesh_and_texture(self) -> Terrain {
         let (material_elevation_noise, material_simplified_elevation_noise) =
             Self::get_noises(self.seeds.material_seed as u64);
-        // let (ethereal_elevation_noise, ethereal_simplified_elevation_noise) =
-        //     Self::get_noises(self.seeds.ethereal_seed as u64);
 
         fn color_to_vec3(color: Color) -> Vec3 {
             Vec3::new(color.r(), color.g(), color.b())
@@ -140,22 +137,22 @@ impl HeightMap {
 
         #[allow(clippy::type_complexity)]
         let generate = |noise: FastNoise,
-                        simplified_noise: FastNoise,
-                        mountains: Vec3,
-                        plains: Vec3|
+                        simplified_noise: FastNoise|
          -> (
             Vec<[f32; 3]>, // vertices
             Vec<[f32; 3]>, // normals
             Vec<[f32; 2]>, // uvs
             Vec<[f32; 3]>, // simplified vertices
-            Vec<u8>,       // colors
+            Vec<u8>,       // colors material
+            Vec<u8>,       // colors ethereal
             Vec<u8>,       // metallic_roughness
         ) {
             let mut simplified_vertices = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
             let mut vertices = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut normals = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut uvs = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
-            let mut colors = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
+            let mut colors_material = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
+            let mut colors_ethereal = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut metallic_roughness = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut cached = CachedNoise::new(simplified_noise);
             for i in 0..=HIGH_DEF {
@@ -221,11 +218,15 @@ impl HeightMap {
                     uvs.push([xz.1, xz.0]);
 
                     let elevation = elevation + 0.3;
-                    // let mountain =
-                    //     arid_mountain.lerp(moisture_mountain, (moisture * 2.0).clamp(0.0, 1.0));
-                    // let prairie = arid_prairie.lerp(moisture_prairie, (moisture * 2.0).clamp(0.0, 1.0));
-                    let lerped = plains.lerp(mountains, elevation);
-                    colors.extend_from_slice(&[
+                    let lerped = material_plains.lerp(material_mountains, elevation);
+                    colors_material.extend_from_slice(&[
+                        (lerped.x * 255.0) as u8,
+                        (lerped.y * 255.0) as u8,
+                        (lerped.z * 255.0) as u8,
+                        255,
+                    ]);
+                    let lerped = ethereal_plains.lerp(ethereal_mountains, elevation);
+                    colors_ethereal.extend_from_slice(&[
                         (lerped.x * 255.0) as u8,
                         (lerped.y * 255.0) as u8,
                         (lerped.z * 255.0) as u8,
@@ -233,7 +234,6 @@ impl HeightMap {
                     ]);
 
                     let roughness = ((1.0 - elevation) * 2.0).clamp(0.0, 1.0);
-                    // let metallic = 1.0 - moisture;
                     metallic_roughness.extend_from_slice(&[
                         0,
                         (roughness * 255.0) as u8,
@@ -247,31 +247,24 @@ impl HeightMap {
                 normals,
                 uvs,
                 simplified_vertices,
-                colors,
+                colors_material,
+                colors_ethereal,
                 metallic_roughness,
             )
         };
 
-        let (positions, normals, uvs, simplified_positions, colors, metallic_roughness) =
-            if self.plane == Plane::Material {
-                generate(
-                    material_elevation_noise,
-                    material_simplified_elevation_noise,
-                    material_mountains,
-                    material_plains,
-                )
-            } else {
-                generate(
-                    // TODO: use same noise for now.
-                    //      either simplify and don't generate two meshes with same values, or keep using two meshes with different noises
-                    // ethereal_elevation_noise,
-                    // ethereal_simplified_elevation_noise,
-                    material_elevation_noise,
-                    material_simplified_elevation_noise,
-                    ethereal_mountains,
-                    ethereal_plains,
-                )
-            };
+        let (
+            positions,
+            normals,
+            uvs,
+            simplified_positions,
+            material_colors,
+            ethereal_colors,
+            metallic_roughness,
+        ) = generate(
+            material_elevation_noise,
+            material_simplified_elevation_noise,
+        );
         let mesh = vertices_as_mesh(positions, normals, uvs, HIGH_DEF);
 
         let simplified_mesh = vertices_as_mesh(simplified_positions, vec![], vec![], LOW_DEF);
@@ -279,14 +272,24 @@ impl HeightMap {
         Terrain {
             mesh,
             simplified_mesh,
-            color: Image::new(
+            material_color: Image::new(
                 Extent3d {
                     width: HIGH_DEF + 1,
                     height: HIGH_DEF + 1,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
-                colors,
+                material_colors,
+                TextureFormat::Rgba8UnormSrgb,
+            ),
+            ethereal_color: Image::new(
+                Extent3d {
+                    width: HIGH_DEF + 1,
+                    height: HIGH_DEF + 1,
+                    depth_or_array_layers: 1,
+                },
+                TextureDimension::D2,
+                ethereal_colors,
                 TextureFormat::Rgba8UnormSrgb,
             ),
             metallic_roughness: Image::new(
@@ -372,6 +375,7 @@ fn vertices_as_mesh(
 pub struct Terrain {
     pub simplified_mesh: Mesh,
     pub mesh: Mesh,
-    pub color: Image,
+    pub material_color: Image,
+    pub ethereal_color: Image,
     pub metallic_roughness: Image,
 }
