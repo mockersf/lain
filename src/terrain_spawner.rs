@@ -69,16 +69,14 @@ impl Plugin for TerrainSpawnerPlugin {
         map.lots.insert(
             (IVec2::new(0, 0), Plane::Material),
             vec![(
-                LOW_DEF as i32 / 2,
-                LOW_DEF as i32 / 2,
+                IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
                 BuildingType::Crystal,
             )],
         );
         map.lots.insert(
             (IVec2::new(0, 0), Plane::Ethereal),
             vec![(
-                LOW_DEF as i32 / 2,
-                LOW_DEF as i32 / 2,
+                IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
                 BuildingType::Crystal,
             )],
         );
@@ -124,7 +122,7 @@ enum BuildingType {
 
 #[derive(Default)]
 struct BuildingMap {
-    lots: HashMap<(IVec2, Plane), Vec<(i32, i32, BuildingType)>>,
+    lots: HashMap<(IVec2, Plane), Vec<(IVec2, BuildingType)>>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -161,16 +159,16 @@ fn fill_empty_lots(
                             map.lots.get(&(IVec2::new(position.x, position.z), *plane))
                         {
                             for building in building_lot {
-                                match building.2 {
+                                match building.1 {
                                     BuildingType::Crystal => lot.spawn_bundle(SceneBundle {
                                         scene: building_assets.crystal.clone_weak(),
                                         transform: Transform {
                                             scale: Vec3::splat(1.0 / LOW_DEF as f32),
                                             translation: Vec3::new(
-                                                (building.0 - LOW_DEF as i32 / 2) as f32
+                                                (building.0.x - LOW_DEF as i32 / 2) as f32
                                                     / LOW_DEF as f32,
                                                 0.03,
-                                                (building.1 - LOW_DEF as i32 / 2) as f32
+                                                (building.0.y - LOW_DEF as i32 / 2) as f32
                                                     / LOW_DEF as f32,
                                             ),
                                             ..default()
