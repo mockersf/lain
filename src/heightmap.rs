@@ -1,6 +1,6 @@
 use bevy::{
     math::Vec3,
-    prelude::{Color, Image, Mesh},
+    prelude::{Color, Image, Mesh, Vec2},
     render::{
         mesh::Indices,
         render_resource::{Extent3d, PrimitiveTopology, TextureDimension, TextureFormat},
@@ -166,19 +166,24 @@ impl HeightMap {
                     let ny = self.y + xz.1;
                     let nx_low = self.x + xz_low.0;
                     let ny_low = self.y + xz_low.1;
-                    // let moisture = moisture_noise.get_noise(nx, ny) + 0.5;
                     let elevation = noise.get_noise(nx, ny);
 
+                    let mut elevation_for_block = |x: f32, z: f32, ix: i32, iz: i32| {
+                        cached.get_noise(x, z, ix, iz)
+                            + Vec2::ZERO.distance_squared(Vec2::new(x, z)) / 500.0
+                            - 0.075
+                    };
+
                     let ixz_low = ((xz.0 * low) as i32, (xz.1 * low) as i32);
-                    let elevation_block = cached.get_noise(nx_low, ny_low, ixz_low.0, ixz_low.1);
+                    let elevation_block = elevation_for_block(nx_low, ny_low, ixz_low.0, ixz_low.1);
                     let bottom =
-                        cached.get_noise(nx_low, ny_low + 1.0 / low, ixz_low.0, ixz_low.1 + 1);
+                        elevation_for_block(nx_low, ny_low + 1.0 / low, ixz_low.0, ixz_low.1 + 1);
                     let top =
-                        cached.get_noise(nx_low, ny_low - 1.0 / low, ixz_low.0, ixz_low.1 - 1);
+                        elevation_for_block(nx_low, ny_low - 1.0 / low, ixz_low.0, ixz_low.1 - 1);
                     let left =
-                        cached.get_noise(nx_low - 1.0 / low, ny_low, ixz_low.0 - 1, ixz_low.1);
+                        elevation_for_block(nx_low - 1.0 / low, ny_low, ixz_low.0 - 1, ixz_low.1);
                     let right =
-                        cached.get_noise(nx_low + 1.0 / low, ny_low, ixz_low.0 + 1, ixz_low.1);
+                        elevation_for_block(nx_low + 1.0 / low, ny_low, ixz_low.0 + 1, ixz_low.1);
                     let mut kind = 0;
 
                     if Self::is_obstacle(elevation_block) {
