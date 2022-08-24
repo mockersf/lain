@@ -46,7 +46,7 @@ impl Plugin for AssetPlugin {
             .add_loading_state(
                 LoadingState::new(AssetState::Loading)
                     .continue_to_state(AssetState::Done)
-                    .with_collection::<RawMenuAssets>()
+                    .with_collection::<RawUiAssets>()
                     .with_collection::<ZombieAssets>()
                     .with_collection::<BuildingAssets>(),
             )
@@ -57,13 +57,13 @@ impl Plugin for AssetPlugin {
 }
 
 #[derive(AssetCollection)]
-struct RawMenuAssets {
+struct RawUiAssets {
     #[asset(path = "ui/arrowBeige_right.png")]
     selection_handle: Handle<Image>,
     #[asset(path = "fonts/kenvector_future.ttf")]
     font_main_handle: Handle<Font>,
-    // #[asset(path = "fonts/mandrill.ttf")]
-    // font_sub_handle: Handle<Font>,
+    #[asset(path = "fonts/mandrill.ttf")]
+    font_sub_handle: Handle<Font>,
     #[asset(path = "ui/panel_blue.png")]
     panel_texture_handle: Handle<Image>,
     #[asset(path = "ui/buttonLong_beige.png")]
@@ -84,10 +84,10 @@ pub(crate) struct BuildingAssets {
     pub(crate) crystal: Handle<Scene>,
 }
 
-pub(crate) struct MenuAssets {
+pub(crate) struct UiAssets {
     pub(crate) selection_handle: Handle<Image>,
     pub(crate) font_main_handle: Handle<Font>,
-    // pub(crate) font_sub_handle: Handle<Font>,
+    pub(crate) font_sub_handle: Handle<Font>,
     pub(crate) panel_handle: (Handle<bevy_ninepatch::NinePatchBuilder<()>>, Handle<Image>),
     pub(crate) button_handle: Handle<crate::ui_helper::button::Button>,
 }
@@ -96,7 +96,7 @@ fn done(world: &mut World) {
     info!("Done Loading Assets");
     unsafe {
         {
-            let raw_menu_assets = world.remove_resource_unchecked::<RawMenuAssets>().unwrap();
+            let raw_ui_assets = world.remove_resource_unchecked::<RawUiAssets>().unwrap();
             let mut nine_patches = world
                 .get_resource_unchecked_mut::<Assets<bevy_ninepatch::NinePatchBuilder<()>>>()
                 .unwrap();
@@ -104,16 +104,16 @@ fn done(world: &mut World) {
                 .get_resource_unchecked_mut::<Assets<crate::ui_helper::button::Button>>()
                 .unwrap();
             let np = bevy_ninepatch::NinePatchBuilder::by_margins(10, 30, 10, 10);
-            let panel_handle = (nine_patches.add(np), raw_menu_assets.panel_texture_handle);
+            let panel_handle = (nine_patches.add(np), raw_ui_assets.panel_texture_handle);
             let button = crate::ui_helper::button::Button::setup(
                 &mut nine_patches,
-                raw_menu_assets.button_texture_handle,
+                raw_ui_assets.button_texture_handle,
             );
             let button_handle = buttons.add(button);
-            world.insert_resource(MenuAssets {
-                selection_handle: raw_menu_assets.selection_handle,
-                font_main_handle: raw_menu_assets.font_main_handle,
-                // font_sub_handle: raw_menu_assets.font_sub_handle,
+            world.insert_resource(UiAssets {
+                selection_handle: raw_ui_assets.selection_handle,
+                font_main_handle: raw_ui_assets.font_main_handle,
+                font_sub_handle: raw_ui_assets.font_sub_handle,
                 panel_handle,
                 button_handle,
             });

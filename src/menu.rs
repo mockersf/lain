@@ -7,7 +7,7 @@ use bevy::{
 
 use bevy_easings::Ease;
 
-use crate::assets::{CloneWeak, MenuAssets, ZombieAssets};
+use crate::assets::{CloneWeak, UiAssets, ZombieAssets};
 
 const CURRENT_STATE: crate::GameState = crate::GameState::Menu;
 
@@ -72,7 +72,7 @@ const MENU_BUTTONS: &[MenuButton] = &[
 fn setup(
     mut commands: Commands,
     mut screen: ResMut<Screen>,
-    menu_handles: Res<MenuAssets>,
+    ui_handles: Res<UiAssets>,
     zombie_handles: Res<ZombieAssets>,
     buttons: Res<Assets<crate::ui_helper::button::Button>>,
     mut mouse_button_input: ResMut<Input<MouseButton>>,
@@ -92,11 +92,11 @@ fn setup(
     keyboard_input.clear();
     gamepad_input.clear();
 
-    let panel_handles = menu_handles.panel_handle.clone_weak();
-    let button_handle = menu_handles.button_handle.clone_weak();
+    let panel_handles = ui_handles.panel_handle.clone_weak();
+    let button_handle = ui_handles.button_handle.clone_weak();
     let button = buttons.get(&button_handle).unwrap();
-    let font = menu_handles.font_main_handle.clone_weak();
-    let menu_indicator = menu_handles.selection_handle.clone_weak();
+    let font = ui_handles.font_main_handle.clone_weak();
+    let menu_indicator = ui_handles.selection_handle.clone_weak();
 
     commands
         .spawn_bundle(NodeBundle {
