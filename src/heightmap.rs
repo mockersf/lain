@@ -151,9 +151,9 @@ impl HeightMap {
             let mut vertices = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut normals = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut uvs = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
-            let mut colors_material = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
-            let mut colors_ethereal = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
-            let mut metallic_roughness = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
+            let mut colors_material = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
+            let mut colors_ethereal = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
+            let mut metallic_roughness = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
             let mut cached = CachedNoise::new(simplified_noise);
             for i in 0..=HIGH_DEF {
                 for j in 0..=HIGH_DEF {
@@ -217,29 +217,33 @@ impl HeightMap {
                     normals.push([0.0, 0.0, 0.0]);
                     uvs.push([xz.1, xz.0]);
 
-                    let elevation = elevation + 0.3;
-                    let lerped = material_plains.lerp(material_mountains, elevation);
-                    colors_material.extend_from_slice(&[
-                        (lerped.x * 255.0) as u8,
-                        (lerped.y * 255.0) as u8,
-                        (lerped.z * 255.0) as u8,
-                        255,
-                    ]);
-                    let lerped = ethereal_plains.lerp(ethereal_mountains, elevation);
-                    colors_ethereal.extend_from_slice(&[
-                        (lerped.x * 255.0) as u8,
-                        (lerped.y * 255.0) as u8,
-                        (lerped.z * 255.0) as u8,
-                        255,
-                    ]);
+                    if (xz.0 - xz_low.0).abs() < error_margin
+                        && (xz.1 - xz_low.1).abs() < error_margin
+                    {
+                        let elevation = elevation + 0.3;
+                        let lerped = material_plains.lerp(material_mountains, elevation);
+                        colors_material.extend_from_slice(&[
+                            (lerped.x * 255.0) as u8,
+                            (lerped.y * 255.0) as u8,
+                            (lerped.z * 255.0) as u8,
+                            255,
+                        ]);
+                        let lerped = ethereal_plains.lerp(ethereal_mountains, elevation);
+                        colors_ethereal.extend_from_slice(&[
+                            (lerped.x * 255.0) as u8,
+                            (lerped.y * 255.0) as u8,
+                            (lerped.z * 255.0) as u8,
+                            255,
+                        ]);
 
-                    let roughness = ((1.0 - elevation) * 2.0).clamp(0.0, 1.0);
-                    metallic_roughness.extend_from_slice(&[
-                        0,
-                        (roughness * 255.0) as u8,
-                        (0.0 * 255.0) as u8,
-                        255,
-                    ]);
+                        let roughness = ((1.0 - elevation) * 2.0).clamp(0.0, 1.0);
+                        metallic_roughness.extend_from_slice(&[
+                            0,
+                            (roughness * 255.0) as u8,
+                            (0.0 * 255.0) as u8,
+                            255,
+                        ]);
+                    }
                 }
             }
             (
@@ -274,8 +278,8 @@ impl HeightMap {
             simplified_mesh,
             material_color: Image::new(
                 Extent3d {
-                    width: HIGH_DEF + 1,
-                    height: HIGH_DEF + 1,
+                    width: LOW_DEF + 1,
+                    height: LOW_DEF + 1,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
@@ -284,8 +288,8 @@ impl HeightMap {
             ),
             ethereal_color: Image::new(
                 Extent3d {
-                    width: HIGH_DEF + 1,
-                    height: HIGH_DEF + 1,
+                    width: LOW_DEF + 1,
+                    height: LOW_DEF + 1,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
@@ -294,8 +298,8 @@ impl HeightMap {
             ),
             metallic_roughness: Image::new(
                 Extent3d {
-                    width: HIGH_DEF + 1,
-                    height: HIGH_DEF + 1,
+                    width: LOW_DEF + 1,
+                    height: LOW_DEF + 1,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
