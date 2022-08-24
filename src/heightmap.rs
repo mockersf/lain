@@ -16,7 +16,7 @@ const WATER_LEVEL: f32 = -10.0;
 const PLATEAU_LEVEL: f32 = 0.25;
 pub const LOW_DEF: u32 = 5;
 pub const HIGH_DEF: u32 = 40;
-const FLATTENING: f32 = 7.5;
+const FLATTENING: f32 = 9.0;
 
 pub struct HeightMap {
     seeds: crate::terra::TerraNoises,

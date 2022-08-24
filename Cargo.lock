@@ -2054,6 +2054,7 @@ dependencies = [
  "bevy_ninepatch",
  "bracket-noise",
  "crossbeam-channel",
+ "interpolation",
  "rand",
  "tracing",
 ]

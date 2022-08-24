@@ -6,8 +6,9 @@ use bevy::{
     tasks::AsyncComputeTaskPool,
     utils::{Entry, HashMap},
 };
-use bevy_easings::{EaseValue, Lerp};
+use bevy_easings::{EaseFunction, EaseValue, Lerp};
 use crossbeam_channel::{Receiver, Sender};
+use interpolation::Ease;
 
 use crate::{
     terra::{Plane, TerraNoises},
@@ -120,7 +121,7 @@ fn fill_empty_lots(
                         lot.spawn_bundle(PbrBundle {
                             mesh: mesh.mesh.clone_weak(),
                             material: mesh.color.clone_weak(),
-                            transform: Transform::from_xyz(0.0, 0.1, 0.0),
+                            transform: Transform::from_xyz(0.0, 0.035, 0.0),
                             ..default()
                         });
                     })
@@ -339,12 +340,13 @@ fn tick(
     if timer.0.tick(time.delta()).just_finished() {
         playing_state.set(PlayingState::Playing).unwrap();
     }
+    let percent = timer.0.percent().calc(EaseFunction::CubicInOut);
     for (mut transform, lot) in &mut lots {
         transform.rotation = match (lot.plane == *plane, (lot.x + lot.z) % 2 == 0) {
-            (true, true) => Quat::from_axis_angle(Vec3::Z, PI * timer.0.percent() + PI),
-            (true, false) => Quat::from_axis_angle(Vec3::X, PI * timer.0.percent() + PI),
-            (false, true) => Quat::from_axis_angle(Vec3::Z, PI * timer.0.percent()),
-            (false, false) => Quat::from_axis_angle(Vec3::X, PI * timer.0.percent()),
+            (true, true) => Quat::from_axis_angle(Vec3::Z, PI * percent + PI),
+            (true, false) => Quat::from_axis_angle(Vec3::X, PI * percent + PI),
+            (false, true) => Quat::from_axis_angle(Vec3::Z, PI * percent),
+            (false, false) => Quat::from_axis_angle(Vec3::X, PI * percent),
         };
     }
 
