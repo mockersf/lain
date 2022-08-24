@@ -33,6 +33,7 @@ bracket-noise = "0.8"
 tracing = "0.1"
 crossbeam-channel = "0.5"
 interpolation = "0.2"
+material-icons = "0.2.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 bevy = { version = "0.8", features = [

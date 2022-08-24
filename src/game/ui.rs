@@ -23,7 +23,8 @@ fn setup(
 
     let button_handle = ui_handles.button_handle.clone_weak();
     let button = buttons.get(&button_handle).unwrap();
-    let font = ui_handles.font_sub_handle.clone_weak();
+    let font = ui_handles.font_sub.clone_weak();
+    let material = ui_handles.font_material.clone_weak();
 
     let build_button = button.add(
         &mut commands,
@@ -39,9 +40,28 @@ fn setup(
         120.,
         40.,
         UiRect::all(Val::Auto),
-        font.clone(),
+        font,
         "Switch Plane",
         20.,
+    );
+
+    let zoom_in_button = button.add(
+        &mut commands,
+        40.,
+        40.,
+        UiRect::all(Val::Auto),
+        material.clone(),
+        material_icons::icon_to_char(material_icons::Icon::ZoomIn),
+        30.,
+    );
+    let zoom_out_button = button.add(
+        &mut commands,
+        40.,
+        40.,
+        UiRect::all(Val::Auto),
+        material,
+        material_icons::icon_to_char(material_icons::Icon::ZoomOut),
+        30.,
     );
 
     commands
@@ -64,7 +84,7 @@ fn setup(
                         },
                         size: Size {
                             width: Val::Undefined,
-                            height: Val::Px(100.0),
+                            height: Val::Px(150.0),
                         },
                         flex_direction: FlexDirection::ColumnReverse,
                         justify_content: JustifyContent::SpaceAround,
@@ -73,6 +93,19 @@ fn setup(
                     },
                     color: UiColor(Color::NONE),
                     ..default()
+                })
+                .with_children(|builder| {
+                    builder
+                        .spawn_bundle(NodeBundle {
+                            style: Style {
+                                flex_direction: FlexDirection::Row,
+                                justify_content: JustifyContent::SpaceAround,
+                                ..default()
+                            },
+                            color: UiColor(Color::NONE),
+                            ..default()
+                        })
+                        .push_children(&[zoom_in_button, zoom_out_button]);
                 })
                 .push_children(&[build_button, switch_button]);
         });

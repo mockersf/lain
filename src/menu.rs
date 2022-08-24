@@ -95,7 +95,7 @@ fn setup(
     let panel_handles = ui_handles.panel_handle.clone_weak();
     let button_handle = ui_handles.button_handle.clone_weak();
     let button = buttons.get(&button_handle).unwrap();
-    let font = ui_handles.font_main_handle.clone_weak();
+    let font = ui_handles.font_main.clone_weak();
     let menu_indicator = ui_handles.selection_handle.clone_weak();
 
     commands

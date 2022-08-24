@@ -61,9 +61,11 @@ struct RawUiAssets {
     #[asset(path = "ui/arrowBeige_right.png")]
     selection_handle: Handle<Image>,
     #[asset(path = "fonts/kenvector_future.ttf")]
-    font_main_handle: Handle<Font>,
+    font_main: Handle<Font>,
     #[asset(path = "fonts/mandrill.ttf")]
-    font_sub_handle: Handle<Font>,
+    font_sub: Handle<Font>,
+    #[asset(path = "fonts/MaterialIcons-Regular.ttf")]
+    font_material: Handle<Font>,
     #[asset(path = "ui/panel_blue.png")]
     panel_texture_handle: Handle<Image>,
     #[asset(path = "ui/buttonLong_beige.png")]
@@ -86,8 +88,9 @@ pub(crate) struct BuildingAssets {
 
 pub(crate) struct UiAssets {
     pub(crate) selection_handle: Handle<Image>,
-    pub(crate) font_main_handle: Handle<Font>,
-    pub(crate) font_sub_handle: Handle<Font>,
+    pub(crate) font_main: Handle<Font>,
+    pub(crate) font_sub: Handle<Font>,
+    pub(crate) font_material: Handle<Font>,
     pub(crate) panel_handle: (Handle<bevy_ninepatch::NinePatchBuilder<()>>, Handle<Image>),
     pub(crate) button_handle: Handle<crate::ui_helper::button::Button>,
 }
@@ -112,8 +115,9 @@ fn done(world: &mut World) {
             let button_handle = buttons.add(button);
             world.insert_resource(UiAssets {
                 selection_handle: raw_ui_assets.selection_handle,
-                font_main_handle: raw_ui_assets.font_main_handle,
-                font_sub_handle: raw_ui_assets.font_sub_handle,
+                font_main: raw_ui_assets.font_main,
+                font_sub: raw_ui_assets.font_sub,
+                font_material: raw_ui_assets.font_material,
                 panel_handle,
                 button_handle,
             });
