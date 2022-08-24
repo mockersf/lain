@@ -121,15 +121,24 @@ struct HandledLot {
 }
 
 #[derive(Debug, Clone)]
-enum Occupying {
+pub(crate) enum Occupying {
     Crystal,
     Tree,
     Bench(f32),
 }
 
+impl Occupying {
+    pub(crate) fn is_free(&self) -> bool {
+        match self {
+            Self::Crystal => false,
+            Self::Tree | Self::Bench(..) => true,
+        }
+    }
+}
+
 #[derive(Default)]
-struct Map {
-    lots: HashMap<(IVec2, Plane), HashMap<IVec2, Occupying>>,
+pub(crate) struct Map {
+    pub(crate) lots: HashMap<(IVec2, Plane), HashMap<IVec2, Occupying>>,
 }
 
 #[allow(clippy::type_complexity)]
