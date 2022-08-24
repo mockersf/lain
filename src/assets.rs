@@ -48,7 +48,8 @@ impl Plugin for AssetPlugin {
                     .continue_to_state(AssetState::Done)
                     .with_collection::<RawUiAssets>()
                     .with_collection::<ZombieAssets>()
-                    .with_collection::<BuildingAssets>(),
+                    .with_collection::<BuildingAssets>()
+                    .with_collection::<RawSceneryAssets>(),
             )
             .add_system_set(
                 SystemSet::on_enter(AssetState::Done).with_system(done.exclusive_system()),
@@ -84,6 +85,25 @@ pub(crate) struct ZombieAssets {
 pub(crate) struct BuildingAssets {
     #[asset(path = "buildings/detail_crystalLarge.glb#Scene0")]
     pub(crate) crystal: Handle<Scene>,
+}
+
+#[derive(AssetCollection)]
+struct RawSceneryAssets {
+    #[asset(path = "scenery/tree.glb")]
+    tree: Handle<Gltf>,
+    #[asset(path = "scenery/trunk.glb#Scene0")]
+    trunk: Handle<Scene>,
+    #[asset(path = "scenery/bench.glb#Scene0")]
+    bench: Handle<Scene>,
+    #[asset(path = "scenery/benchDamaged.glb#Scene0")]
+    bench_damaged: Handle<Scene>,
+}
+
+pub(crate) struct SceneryAssets {
+    pub(crate) tree: Handle<Scene>,
+    pub(crate) trunk: Handle<Scene>,
+    pub(crate) bench: Handle<Scene>,
+    pub(crate) bench_damaged: Handle<Scene>,
 }
 
 pub(crate) struct UiAssets {
@@ -134,6 +154,25 @@ fn done(world: &mut World) {
                 .play(animations.named_animations["Walk3"].clone_weak())
                 .repeat();
             scene.world.entity_mut(Entity::from_raw(1)).insert(player);
+        }
+
+        {
+            let scenery_assets = world
+                .remove_resource_unchecked::<RawSceneryAssets>()
+                .unwrap();
+            let mut scenes = world.get_resource_unchecked_mut::<Assets<Scene>>().unwrap();
+            let gltfs = world.get_resource::<Assets<Gltf>>().unwrap();
+            let tree = gltfs.get(&scenery_assets.tree).unwrap();
+            let scene = scenes.get_mut(&tree.scenes[0]).unwrap();
+            let mut player = AnimationPlayer::default();
+            player.play(tree.animations[0].clone()).repeat();
+            scene.world.entity_mut(Entity::from_raw(1)).insert(player);
+            world.insert_resource(SceneryAssets {
+                tree: tree.scenes[0].clone(),
+                trunk: scenery_assets.trunk,
+                bench: scenery_assets.bench,
+                bench_damaged: scenery_assets.bench_damaged,
+            });
         }
     }
 }

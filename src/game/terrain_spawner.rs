@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::f32::consts::{FRAC_PI_4, PI};
 
 use bevy::{
     ecs::component::SparseStorage,
@@ -8,9 +8,10 @@ use bevy::{
 };
 use bevy_mod_raycast::{Intersection, RayCastMesh, RayCastMethod, RayCastSource, SimplifiedMesh};
 use crossbeam_channel::{Receiver, Sender};
+use rand::Rng;
 
 use crate::{
-    assets::BuildingAssets,
+    assets::{BuildingAssets, SceneryAssets},
     game::heightmap::{HeightMap, LOW_DEF},
     game::terra::{Plane, TerraNoises},
     GameState,
@@ -66,21 +67,16 @@ impl Plugin for TerrainSpawnerPlugin {
     fn build(&self, app: &mut App) {
         let (tx, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
-        let mut map = BuildingMap::default();
-        map.lots.insert(
-            (IVec2::new(0, 0), Plane::Material),
-            vec![(
-                IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
-                BuildingType::Crystal,
-            )],
+        let mut crystal = HashMap::new();
+        crystal.insert(
+            IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
+            Occupying::Crystal,
         );
-        map.lots.insert(
-            (IVec2::new(0, 0), Plane::Ethereal),
-            vec![(
-                IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
-                BuildingType::Crystal,
-            )],
-        );
+        let mut map = Map::default();
+        map.lots
+            .insert((IVec2::new(0, 0), Plane::Material), crystal.clone());
+        map.lots
+            .insert((IVec2::new(0, 0), Plane::Ethereal), crystal);
 
         app.insert_resource(MyChannel(tx, rx))
             .init_resource::<VisibleLots>()
@@ -124,14 +120,16 @@ struct HandledLot {
     color: Handle<StandardMaterial>,
 }
 
-#[derive(Debug)]
-enum BuildingType {
+#[derive(Debug, Clone)]
+enum Occupying {
     Crystal,
+    Tree,
+    Bench(f32),
 }
 
 #[derive(Default)]
-struct BuildingMap {
-    lots: HashMap<(IVec2, Plane), Vec<(IVec2, BuildingType)>>,
+struct Map {
+    lots: HashMap<(IVec2, Plane), HashMap<IVec2, Occupying>>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -149,8 +147,9 @@ fn fill_empty_lots(
     mut in_transit: Local<usize>,
     plane: Res<Plane>,
     playing_state: Res<State<PlayingState>>,
-    map: Res<BuildingMap>,
+    mut map: ResMut<Map>,
     building_assets: Res<BuildingAssets>,
+    scenery_assets: Res<SceneryAssets>,
 ) {
     for (entity, mut position, mut transform) in lots.iter_mut() {
         if let Some(mesh) = mesh_cache.get(&(IVec2::new(position.x, position.z), *plane)) {
@@ -174,9 +173,10 @@ fn fill_empty_lots(
                         if let Some(building_lot) =
                             map.lots.get(&(IVec2::new(position.x, position.z), *plane))
                         {
+                            let mut rng = rand::thread_rng();
                             for building in building_lot {
                                 match building.1 {
-                                    BuildingType::Crystal => lot.spawn_bundle(SceneBundle {
+                                    Occupying::Crystal => lot.spawn_bundle(SceneBundle {
                                         scene: building_assets.crystal.clone_weak(),
                                         transform: Transform {
                                             scale: Vec3::splat(1.0 / LOW_DEF as f32),
@@ -188,6 +188,48 @@ fn fill_empty_lots(
                                                     / LOW_DEF as f32,
                                             ),
                                             ..default()
+                                        },
+                                        ..default()
+                                    }),
+                                    Occupying::Tree => lot.spawn_bundle(SceneBundle {
+                                        scene: if *plane == Plane::Material {
+                                            scenery_assets.tree.clone_weak()
+                                        } else {
+                                            scenery_assets.trunk.clone_weak()
+                                        },
+                                        transform: Transform {
+                                            scale: Vec3::splat(
+                                                1.0 / LOW_DEF as f32 * rng.gen_range(0.7..0.9),
+                                            ),
+                                            translation: Vec3::new(
+                                                (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                                0.03,
+                                                (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                            ),
+                                            rotation: Quat::from_rotation_y(rng.gen_range(
+                                                (FRAC_PI_4 * 9.0 / 10.0)..(FRAC_PI_4 * 11.0 / 10.0),
+                                            )),
+                                        },
+                                        ..default()
+                                    }),
+                                    Occupying::Bench(a) => lot.spawn_bundle(SceneBundle {
+                                        scene: if *plane == Plane::Material {
+                                            scenery_assets.bench.clone_weak()
+                                        } else {
+                                            scenery_assets.bench_damaged.clone_weak()
+                                        },
+                                        transform: Transform {
+                                            scale: Vec3::splat(0.5 / LOW_DEF as f32),
+                                            translation: Vec3::new(
+                                                (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                                0.03,
+                                                (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                    / LOW_DEF as f32,
+                                            ),
+                                            rotation: Quat::from_rotation_y(*a),
                                         },
                                         ..default()
                                     }),
@@ -266,6 +308,65 @@ fn fill_empty_lots(
                 (IVec2::new(lot.x, lot.z), Plane::Ethereal),
                 ethereal_handled_lot,
             );
+            let mut rng = rand::thread_rng();
+            for i in 0..LOW_DEF {
+                for j in 0..LOW_DEF {
+                    if rng.gen_bool(0.01) {
+                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Material)) {
+                            Entry::Occupied(mut o) => {
+                                let _ = o
+                                    .get_mut()
+                                    .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
+                            }
+                            Entry::Vacant(v) => {
+                                let mut lot = HashMap::new();
+                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
+                                v.insert(lot);
+                            }
+                        }
+                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Ethereal)) {
+                            Entry::Occupied(mut o) => {
+                                let _ = o
+                                    .get_mut()
+                                    .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
+                            }
+                            Entry::Vacant(v) => {
+                                let mut lot = HashMap::new();
+                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
+                                v.insert(lot);
+                            }
+                        }
+                    } else if rng.gen_bool(0.005) {
+                        let a = rng.gen_range(0.0..(2.0 * PI));
+                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Material)) {
+                            Entry::Occupied(mut o) => {
+                                let _ = o.get_mut().try_insert(
+                                    IVec2::new(i as i32, j as i32),
+                                    Occupying::Bench(a),
+                                );
+                            }
+                            Entry::Vacant(v) => {
+                                let mut lot = HashMap::new();
+                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
+                                v.insert(lot);
+                            }
+                        }
+                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Ethereal)) {
+                            Entry::Occupied(mut o) => {
+                                let _ = o.get_mut().try_insert(
+                                    IVec2::new(i as i32, j as i32),
+                                    Occupying::Bench(a),
+                                );
+                            }
+                            Entry::Vacant(v) => {
+                                let mut lot = HashMap::new();
+                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
+                                v.insert(lot);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
