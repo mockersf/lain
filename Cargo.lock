@@ -579,6 +579,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_raycast"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7aead49a20f5e694f4fb59c7312f9a1813b65a2a0ac2c385d53d40f25cae896f"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_ninepatch"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2051,6 +2060,7 @@ dependencies = [
  "bevy_easings",
  "bevy_embedded_assets",
  "bevy_jornet",
+ "bevy_mod_raycast",
  "bevy_ninepatch",
  "bracket-noise",
  "crossbeam-channel",

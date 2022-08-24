@@ -6,6 +6,8 @@ use std::f32::consts::FRAC_PI_4;
 
 use bevy::{app::AppExit, prelude::*, render::texture::ImageSettings};
 use bevy_jornet::JornetPlugin;
+use bevy_mod_raycast::{DefaultRaycastingPlugin, RayCastSource};
+use terrain_spawner::RaycastSet;
 
 mod assets;
 mod heightmap;
@@ -70,6 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .insert_resource(GameScreen::default())
         // ui
         .add_plugin(crate::ui::button::Plugin)
+        .add_plugin(DefaultRaycastingPlugin::<RaycastSet>::default())
         // screens
         .add_state(GameState::Splash)
         .add_state(PlayingState::Playing)
@@ -135,10 +138,12 @@ impl GameScreen {
 }
 
 fn general_setup(mut commands: Commands) {
-    commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 1.0, 10.0)),
-        ..default()
-    });
+    commands
+        .spawn_bundle(Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 10.0)),
+            ..default()
+        })
+        .insert(RayCastSource::<RaycastSet>::new());
 }
 
 fn exit(mut app_exit_events: EventWriter<AppExit>) {

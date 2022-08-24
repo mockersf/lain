@@ -2,11 +2,13 @@ use std::f32::consts::PI;
 
 use bevy::{
     ecs::component::SparseStorage,
+    pbr::NotShadowCaster,
     prelude::*,
     tasks::AsyncComputeTaskPool,
     utils::{Entry, HashMap},
 };
 use bevy_easings::{EaseFunction, EaseValue, Lerp};
+use bevy_mod_raycast::{Intersection, RayCastMesh, RayCastMethod, RayCastSource, SimplifiedMesh};
 use crossbeam_channel::{Receiver, Sender};
 use interpolation::Ease;
 
@@ -91,15 +93,41 @@ impl Plugin for TerrainSpawnerPlugin {
                     .with_system(move_camera)
                     .with_system(fill_empty_lots)
                     .with_system(refresh_visible_lots.after(fill_empty_lots))
-                    .with_system(cleanup_lots),
+                    .with_system(cleanup_lots)
+                    .with_system(intersection),
             );
     }
 }
 
-fn setup_camera(mut camera: Query<&mut Transform, With<Camera>>) {
+fn setup_camera(
+    mut commands: Commands,
+    mut camera: Query<&mut Transform, With<Camera>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     let mut transform = camera.single_mut();
     *transform = Transform::from_xyz(0.0, 4.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Box::new(
+                1.0 / LOW_DEF as f32,
+                0.7,
+                1.0 / LOW_DEF as f32,
+            ))),
+            material: materials.add(StandardMaterial {
+                base_color: Color::rgba(0.2, 1.0, 0.2, 0.5),
+                alpha_mode: AlphaMode::Blend,
+                unlit: true,
+                ..default()
+            }),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+            ..Default::default()
+        })
+        .insert_bundle((CursorSelection, NotShadowCaster));
 }
+
+#[derive(Component)]
+struct CursorSelection;
 
 struct InTransitLot {
     mesh: Mesh,
@@ -153,7 +181,14 @@ fn fill_empty_lots(
                             material: mesh.color.clone_weak(),
                             transform: Transform::from_xyz(0.0, 0.035, 0.0),
                             ..default()
-                        });
+                        })
+                        .insert_bundle((
+                            RayCastMesh::<RaycastSet>::default(),
+                            SimplifiedMesh {
+                                mesh: meshes.add(Mesh::from(shape::Plane::default())),
+                            },
+                        ));
+
                         if let Some(building_lot) =
                             map.lots.get(&(IVec2::new(position.x, position.z), *plane))
                         {
@@ -452,4 +487,43 @@ fn clear(mut commands: Commands, lots: Query<(Entity, &FilledLot)>, plane: Res<P
             commands.entity(entity).despawn_recursive();
         }
     }
+}
+
+pub struct RaycastSet;
+
+fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
+    (
+        IVec2::new(world.x.round() as i32, world.y.round() as i32),
+        IVec2::new(
+            ((1.0 - (world.x - world.x.round() + 0.5)) * LOW_DEF as f32) as i32,
+            ((world.y - world.y.round() + 0.5) * LOW_DEF as f32) as i32,
+        ),
+    )
+}
+
+fn map_to_world(map: (IVec2, IVec2)) -> Vec2 {
+    Vec2::new(
+        map.0.x as f32 - (map.1.x as f32 + 0.5) / LOW_DEF as f32 + 0.5,
+        map.0.y as f32 + (map.1.y as f32 + 0.5) / LOW_DEF as f32 - 0.5,
+    )
+}
+
+fn intersection(
+    query: Query<&Intersection<RaycastSet>>,
+    mut cursor: EventReader<CursorMoved>,
+    mut pick_source: Query<&mut RayCastSource<RaycastSet>>,
+    mut cursor_position: Query<&mut Transform, With<CursorSelection>>,
+) {
+    for intersection in &query {
+        if let Some(position) = intersection.position() {
+            let position = map_to_world(world_to_map(Vec2::new(position.x, position.z)));
+            cursor_position.single_mut().translation = Vec3::new(position.x, 0.05, position.y);
+        }
+    }
+    let cursor_position = match cursor.iter().last() {
+        Some(cursor_moved) => cursor_moved.position,
+        None => return,
+    };
+
+    pick_source.single_mut().cast_method = RayCastMethod::Screenspace(cursor_position);
 }

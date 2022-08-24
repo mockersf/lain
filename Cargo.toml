@@ -26,6 +26,7 @@ bevy_embedded_assets = { version = "0.4", optional = true }
 bevy_jornet = "0.1"
 bevy_ninepatch = "0.8"
 bevy_asset_loader = "0.12"
+bevy_mod_raycast = "0.6"
 
 rand = "0.8"
 bracket-noise = "0.8"
@@ -46,7 +47,8 @@ default = []
 hot = [ "bevy/filesystem_watcher" ]
 release = [ "bundled", "tracing/release_max_level_warn" ]
 bundled = [ "bevy_embedded_assets" ]
-trace = [ "bevy/trace", "bevy/trace_tracy" ]
+trace = [ "bevy/trace" ]
+tracy = [ "bevy/trace", "bevy/trace_tracy" ]
 
 [profile.dev.package."*"]
 opt-level = 3
