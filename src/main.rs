@@ -72,6 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::ui::button::Plugin)
         // screens
         .add_state(GameState::Splash)
+        .add_state(PlayingState::Playing)
         .add_state_to_stage(CoreStage::PostUpdate, GameState::Splash)
         .add_system_set(SystemSet::on_enter(GameState::Exit).with_system(exit))
         .add_plugin(crate::assets::AssetPlugin)
@@ -79,6 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::menu::Plugin)
         .add_plugin(crate::terrain_spawner::TerrainSpawnerPlugin)
         .add_plugin(crate::terra::TerraPlugin)
+        .add_plugin(crate::terrain_spawner::SwitchingPlanePlugin)
         .add_system(animate_light_direction)
         // .add_plugin(crate::about::Plugin)
         // .add_plugin(crate::game::Plugin)
@@ -89,6 +91,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub const STAGE: &str = "game";
+
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
 pub enum GameState {
     Splash,
@@ -98,6 +101,12 @@ pub enum GameState {
     Paused,
     Lost,
     Exit,
+}
+
+#[derive(Clone, PartialEq, Debug, Eq, Hash)]
+pub enum PlayingState {
+    Playing,
+    SwitchingPlane,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

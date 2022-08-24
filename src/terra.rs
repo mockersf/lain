@@ -5,15 +5,15 @@ pub struct TerraPlugin;
 
 #[derive(Clone, Copy)]
 pub struct TerraNoises {
-    pub elevation_seed: u32,
-    pub moisture_seed: u32,
+    pub material_seed: u32,
+    pub ethereal_seed: u32,
 }
 
 impl TerraNoises {
     fn new() -> Self {
         Self {
-            elevation_seed: thread_rng().gen(),
-            moisture_seed: thread_rng().gen(),
+            material_seed: thread_rng().gen(),
+            ethereal_seed: thread_rng().gen(),
         }
     }
 }
@@ -22,4 +22,10 @@ impl Plugin for TerraPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.insert_resource(TerraNoises::new());
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Plane {
+    Material,
+    Ethereal,
 }

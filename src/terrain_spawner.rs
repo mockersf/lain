@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{
     ecs::component::SparseStorage,
     prelude::*,
@@ -6,7 +8,10 @@ use bevy::{
 };
 use crossbeam_channel::{Receiver, Sender};
 
-use crate::{terra::TerraNoises, GameState};
+use crate::{
+    terra::{Plane, TerraNoises},
+    GameState, PlayingState,
+};
 
 const BORDER: f32 = 20.0;
 
@@ -38,6 +43,16 @@ impl EmptyLot {
     }
 }
 
+pub struct FilledLot {
+    x: i32,
+    z: i32,
+    plane: Plane,
+}
+
+impl Component for FilledLot {
+    type Storage = SparseStorage;
+}
+
 pub struct TerrainSpawnerPlugin;
 
 struct MyChannel(Sender<InTransitLot>, Receiver<InTransitLot>);
@@ -48,6 +63,7 @@ impl Plugin for TerrainSpawnerPlugin {
 
         app.insert_resource(MyChannel(tx, rx))
             .init_resource::<VisibleLots>()
+            .insert_resource(Plane::Material)
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_camera))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
@@ -71,6 +87,7 @@ struct InTransitLot {
     metallic_roughness: Image,
     x: i32,
     z: i32,
+    plane: Plane,
 }
 struct HandledLot {
     mesh: Handle<Mesh>,
@@ -86,13 +103,14 @@ fn fill_empty_lots(
         ResMut<Assets<Image>>,
         ResMut<Assets<StandardMaterial>>,
     ),
-    mut mesh_cache: Local<HashMap<IVec2, HandledLot>>,
+    mut mesh_cache: Local<HashMap<(IVec2, Plane), HandledLot>>,
     noises: Res<TerraNoises>,
     channel: Res<MyChannel>,
     mut in_transit: Local<usize>,
+    plane: Res<Plane>,
 ) {
     for (entity, mut position) in lots.iter_mut() {
-        if let Some(mesh) = mesh_cache.get(&IVec2::new(position.x, position.z)) {
+        if let Some(mesh) = mesh_cache.get(&(IVec2::new(position.x, position.z), *plane)) {
             if !position.offscreen {
                 commands
                     .entity(entity)
@@ -100,8 +118,14 @@ fn fill_empty_lots(
                         lot.spawn_bundle(PbrBundle {
                             mesh: mesh.mesh.clone_weak(),
                             material: mesh.color.clone_weak(),
-                            ..Default::default()
+                            transform: Transform::from_xyz(0.0, 0.1, 0.0),
+                            ..default()
                         });
+                    })
+                    .insert(FilledLot {
+                        x: position.x,
+                        z: position.z,
+                        plane: *plane,
                     })
                     .remove::<EmptyLot>();
             } else {
@@ -112,10 +136,11 @@ fn fill_empty_lots(
             let pos_y = position.z as f32;
             let noises = *noises;
             let tx = channel.0.clone();
+            let plane = *plane;
             AsyncComputeTaskPool::get()
                 .spawn(async move {
                     let heightmap =
-                        crate::heightmap::HeightMap::build_heightmap(pos_x, pos_y, noises);
+                        crate::heightmap::HeightMap::build_heightmap(pos_x, pos_y, plane, noises);
                     let terrain = heightmap.into_mesh_and_texture();
 
                     tx.send(InTransitLot {
@@ -124,6 +149,7 @@ fn fill_empty_lots(
                         metallic_roughness: terrain.metallic_roughness,
                         x: pos_x as i32,
                         z: pos_y as i32,
+                        plane,
                     })
                     .unwrap();
                 })
@@ -144,7 +170,7 @@ fn fill_empty_lots(
                 }),
             };
             *in_transit -= 1;
-            mesh_cache.insert(IVec2::new(lot.x, lot.z), handled_lot);
+            mesh_cache.insert((IVec2::new(lot.x, lot.z), lot.plane), handled_lot);
         }
     }
 }
@@ -160,12 +186,14 @@ fn cleanup_lots(
 }
 
 #[derive(Default)]
-pub struct VisibleLots(HashMap<IVec2, Entity>);
+pub struct VisibleLots(HashMap<IVec2, (Entity, Plane)>);
 
 fn refresh_visible_lots(
     mut commands: Commands,
     camera: Query<(&bevy::render::camera::Camera, &GlobalTransform)>,
     mut visible_lots: ResMut<VisibleLots>,
+    plane: Res<Plane>,
+    playing_state: Res<State<PlayingState>>,
 ) {
     let margin = 0.5;
     let is_on_screen = |position: Vec3| {
@@ -187,15 +215,17 @@ fn refresh_visible_lots(
 
     let (camera, gt) = camera.single();
 
-    let mut updated_lots: HashMap<IVec2, Entity> = visible_lots
+    let mut updated_lots: HashMap<IVec2, (Entity, Plane)> = visible_lots
         .0
         .drain()
-        .filter(|(position, entity)| {
+        .filter(|(position, (entity, lot_plane))| {
             if let Some(screen_position) =
                 camera.world_to_ndc(gt, Vec3::new(position.x as f32, 0.0, position.y as f32))
             {
-                if !is_on_screen(screen_position) {
-                    commands.entity(*entity).despawn_recursive();
+                if !is_on_screen(screen_position) || *plane != *lot_plane {
+                    if *playing_state.current() != PlayingState::SwitchingPlane {
+                        commands.entity(*entity).despawn_recursive();
+                    }
                     return false;
                 }
             }
@@ -212,7 +242,7 @@ fn refresh_visible_lots(
             {
                 if is_on_screen(screen_position) {
                     if let Entry::Vacant(vacant) = updated_lots.entry(position) {
-                        vacant.insert(
+                        vacant.insert((
                             commands
                                 .spawn_bundle((
                                     EmptyLot::new(position, false),
@@ -222,7 +252,8 @@ fn refresh_visible_lots(
                                     ComputedVisibility::not_visible(),
                                 ))
                                 .id(),
-                        );
+                            *plane,
+                        ));
                     }
                 }
             }
@@ -236,26 +267,92 @@ fn move_camera(
     mut query: Query<&mut Transform, With<Camera>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
+    mut playing_state: ResMut<State<PlayingState>>,
 ) {
-    let transform = query.single();
-    let move_by = time.delta_seconds();
-    let mut move_to = Vec3::ZERO;
-    let mut moving = false;
-    if input.pressed(KeyCode::Left) && transform.translation.x < BORDER {
-        moving = true;
-        move_to.x = 1.0;
-    } else if input.pressed(KeyCode::Right) && transform.translation.x > -BORDER {
-        moving = true;
-        move_to.x = -1.0;
+    if *playing_state.current() != PlayingState::SwitchingPlane {
+        let transform = query.single();
+        let move_by = time.delta_seconds();
+        let mut move_to = Vec3::ZERO;
+        let mut moving = false;
+        if input.pressed(KeyCode::Left) && transform.translation.x < BORDER {
+            moving = true;
+            move_to.x = 1.0;
+        } else if input.pressed(KeyCode::Right) && transform.translation.x > -BORDER {
+            moving = true;
+            move_to.x = -1.0;
+        }
+        if input.pressed(KeyCode::Up) && transform.translation.z < BORDER {
+            moving = true;
+            move_to.z = 1.0;
+        } else if input.pressed(KeyCode::Down) && transform.translation.z > -BORDER {
+            moving = true;
+            move_to.z = -1.0;
+        }
+        if moving {
+            query.single_mut().translation += move_to.normalize() * move_by;
+        }
+        if input.just_pressed(KeyCode::Space) {
+            playing_state.set(PlayingState::SwitchingPlane).unwrap();
+        }
     }
-    if input.pressed(KeyCode::Up) && transform.translation.z < BORDER {
-        moving = true;
-        move_to.z = 1.0;
-    } else if input.pressed(KeyCode::Down) && transform.translation.z > -BORDER {
-        moving = true;
-        move_to.z = -1.0;
+}
+
+pub struct SwitchingPlanePlugin;
+impl Plugin for SwitchingPlanePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(PlayingState::SwitchingPlane).with_system(change_plane),
+        )
+        .add_system_set(SystemSet::on_update(PlayingState::SwitchingPlane).with_system(tick))
+        .add_system_set(SystemSet::on_exit(PlayingState::SwitchingPlane).with_system(clear));
     }
-    if moving {
-        query.single_mut().translation += move_to.normalize() * move_by;
+}
+
+struct SwitchingTimer(Timer);
+
+fn change_plane(
+    mut commands: Commands,
+    mut plane: ResMut<Plane>,
+    mut light: Query<&mut DirectionalLight>,
+) {
+    match *plane {
+        Plane::Material => {
+            *plane = Plane::Ethereal;
+            light.single_mut().color = Color::ALICE_BLUE;
+        }
+        Plane::Ethereal => {
+            *plane = Plane::Material;
+            light.single_mut().color = Color::WHITE;
+        }
+    }
+    commands.insert_resource(SwitchingTimer(Timer::from_seconds(1.0, false)));
+    info!("now on plane {:?}", *plane);
+}
+
+fn tick(
+    mut lots: Query<(&mut Transform, &FilledLot)>,
+    time: Res<Time>,
+    mut timer: ResMut<SwitchingTimer>,
+    mut playing_state: ResMut<State<PlayingState>>,
+    plane: Res<Plane>,
+) {
+    if timer.0.tick(time.delta()).just_finished() {
+        playing_state.set(PlayingState::Playing).unwrap();
+    }
+    for (mut transform, lot) in &mut lots {
+        transform.rotation = match (lot.plane == *plane, (lot.x + lot.z) % 2 == 0) {
+            (true, true) => Quat::from_axis_angle(Vec3::Z, PI * timer.0.percent() + PI),
+            (true, false) => Quat::from_axis_angle(Vec3::X, PI * timer.0.percent() + PI),
+            (false, true) => Quat::from_axis_angle(Vec3::Z, PI * timer.0.percent()),
+            (false, false) => Quat::from_axis_angle(Vec3::X, PI * timer.0.percent()),
+        };
+    }
+}
+
+fn clear(mut commands: Commands, lots: Query<(Entity, &FilledLot)>, plane: Res<Plane>) {
+    for (entity, lot) in &lots {
+        if lot.plane != *plane {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
