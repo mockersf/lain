@@ -124,8 +124,8 @@ impl HeightMap {
     pub fn into_mesh_and_texture(self) -> Terrain {
         let (material_elevation_noise, material_simplified_elevation_noise) =
             Self::get_noises(self.seeds.material_seed as u64);
-        let (ethereal_elevation_noise, ethereal_simplified_elevation_noise) =
-            Self::get_noises(self.seeds.ethereal_seed as u64);
+        // let (ethereal_elevation_noise, ethereal_simplified_elevation_noise) =
+        //     Self::get_noises(self.seeds.ethereal_seed as u64);
 
         fn color_to_vec3(color: Color) -> Vec3 {
             Vec3::new(color.r(), color.g(), color.b())
@@ -138,6 +138,7 @@ impl HeightMap {
         let high = HIGH_DEF as f32;
         let error_margin = 1.0 / high / 2.0;
 
+        #[allow(clippy::type_complexity)]
         let generate = |noise: FastNoise,
                         simplified_noise: FastNoise,
                         mountains: Vec3,
