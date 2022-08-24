@@ -11,9 +11,7 @@ use bevy_easings::{EaseFunction, EaseValue, Lerp};
 use interpolation::Ease;
 use tracing::info;
 
-use crate::PlayingState;
-
-use super::{terra::Plane, terrain_spawner::FilledLot};
+use super::{terra::Plane, terrain_spawner::FilledLot, PlayingState};
 
 pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {

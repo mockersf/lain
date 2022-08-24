@@ -1,7 +1,7 @@
 use bevy::{
     prelude::{
         default, Assets, BuildChildren, Button, Camera, Changed, Color, Commands, NodeBundle,
-        Query, Res, SystemSet, Transform, With,
+        Query, Res, ResMut, State, SystemSet, Transform, With,
     },
     time::Time,
     ui::{
@@ -11,6 +11,8 @@ use bevy::{
 use tracing::info;
 
 use crate::{assets::UiAssets, GameState};
+
+use super::PlayingState;
 
 pub(crate) struct Plugin;
 

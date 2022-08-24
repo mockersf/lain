@@ -14,8 +14,10 @@ use crate::{
     assets::BuildingAssets,
     game::heightmap::{HeightMap, LOW_DEF},
     game::terra::{Plane, TerraNoises},
-    GameState, PlayingState,
+    GameState,
 };
+
+use super::PlayingState;
 
 const BORDER: f32 = 20.0;
 

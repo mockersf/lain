@@ -72,16 +72,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(DefaultRaycastingPlugin::<RaycastSet>::default())
         // screens
         .add_state(GameState::Splash)
-        .add_state(PlayingState::Playing)
         .add_state_to_stage(CoreStage::PostUpdate, GameState::Splash)
         .add_system_set(SystemSet::on_enter(GameState::Exit).with_system(exit))
         .add_plugin(crate::assets::AssetPlugin)
         .add_plugin(crate::splash::Plugin)
         .add_plugin(crate::menu::Plugin)
-        .add_plugin(crate::game::terrain_spawner::TerrainSpawnerPlugin)
-        .add_plugin(crate::game::terra::TerraPlugin)
-        .add_plugin(crate::game::switcher::Plugin)
-        .add_plugin(crate::game::ui::Plugin)
+        .add_plugin(crate::game::Plugin)
         .add_system(animate_light_direction)
         .run();
 
@@ -97,12 +93,6 @@ pub(crate) enum GameState {
     // Paused,
     // Lost,
     Exit,
-}
-
-#[derive(Clone, PartialEq, Debug, Eq, Hash)]
-pub(crate) enum PlayingState {
-    Playing,
-    SwitchingPlane,
 }
 
 fn general_setup(mut commands: Commands) {
