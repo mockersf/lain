@@ -152,8 +152,8 @@ fn button_system(
     time: Res<Time>,
 ) {
     for (_button, interaction, button_id, changed) in interaction_query.iter_mut() {
-        match *interaction {
-            Interaction::Clicked => match (button_id.0, changed) {
+        if *interaction == Interaction::Clicked {
+            match (button_id.0, changed) {
                 (UiButtons::ZoomIn, _) => {
                     if camera.single().translation.y > 2.0 {
                         camera.single_mut().translation.y -= time.delta_seconds();
@@ -167,8 +167,7 @@ fn button_system(
                 (UiButtons::SwitchPlane, true) => todo!(),
                 (UiButtons::BuildTower, true) => todo!(),
                 _ => (),
-            },
-            _ => (),
+            }
         }
     }
 }
