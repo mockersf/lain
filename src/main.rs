@@ -153,7 +153,7 @@ fn animate_light_direction(
         transform.rotation = Quat::from_euler(
             EulerRot::ZYX,
             0.0,
-            time.seconds_since_startup() as f32 * std::f32::consts::TAU / 1000.0,
+            time.seconds_since_startup() as f32 * std::f32::consts::TAU / 10000.0,
             -FRAC_PI_4,
         );
     }
