@@ -1,7 +1,7 @@
 use bevy::{
     prelude::{
-        default, Assets, BuildChildren, Button, Camera, Changed, Color, Commands, NodeBundle,
-        Query, Res, ResMut, State, SystemSet, Transform, With,
+        default, Assets, BuildChildren, Camera, Changed, Color, Commands, Local, NodeBundle, Query,
+        Res, ResMut, State, SystemSet, Transform, With,
     },
     text::Text,
     time::Time,
@@ -151,18 +151,14 @@ fn setup(
 }
 
 fn button_system(
-    mut interaction_query: Query<(
-        &Button,
-        &Interaction,
-        &mut ButtonId<UiButtons>,
-        Changed<Interaction>,
-    )>,
+    interaction_query: Query<(&Interaction, &ButtonId<UiButtons>, Changed<Interaction>)>,
     mut text_query: Query<(&mut Text, &ButtonText<UiButtons>)>,
     mut camera: Query<&mut Transform, With<Camera>>,
     time: Res<Time>,
     mut playing_state: ResMut<State<PlayingState>>,
+    mut building: Local<bool>,
 ) {
-    for (_button, interaction, mut button_id, changed) in interaction_query.iter_mut() {
+    for (interaction, button_id, changed) in interaction_query.iter() {
         if *interaction == Interaction::Clicked {
             match (button_id.0, changed) {
                 (UiButtons::ZoomIn, _) => {
@@ -178,23 +174,30 @@ fn button_system(
                 (UiButtons::SwitchPlane, true) => {
                     if *playing_state.current() != PlayingState::SwitchingPlane {
                         playing_state.set(PlayingState::SwitchingPlane).unwrap();
-                    }
-                }
-                (UiButtons::BuildTower, true) => {
-                    playing_state.set(PlayingState::Building).unwrap();
-                    button_id.0 = UiButtons::Cancel;
-                    for (mut text, button) in &mut text_query {
-                        if button.0 == UiButtons::BuildTower {
-                            text.sections[0].value = UiButtons::Cancel.into()
+                        for (mut text, button) in &mut text_query {
+                            if button.0 == UiButtons::BuildTower {
+                                text.sections[0].value = UiButtons::BuildTower.into();
+                                *building = false;
+                            }
                         }
                     }
                 }
-                (UiButtons::Cancel, true) => {
-                    playing_state.set(PlayingState::Playing).unwrap();
-                    button_id.0 = UiButtons::BuildTower;
-                    for (mut text, button) in &mut text_query {
-                        if button.0 == UiButtons::BuildTower {
-                            text.sections[0].value = UiButtons::BuildTower.into()
+                (UiButtons::BuildTower, true) => {
+                    if *building {
+                        playing_state.set(PlayingState::Playing).unwrap();
+                        for (mut text, button) in &mut text_query {
+                            if button.0 == UiButtons::BuildTower {
+                                text.sections[0].value = UiButtons::BuildTower.into();
+                                *building = false;
+                            }
+                        }
+                    } else {
+                        playing_state.set(PlayingState::Building).unwrap();
+                        for (mut text, button) in &mut text_query {
+                            if button.0 == UiButtons::BuildTower {
+                                text.sections[0].value = UiButtons::Cancel.into();
+                                *building = true;
+                            }
                         }
                     }
                 }
