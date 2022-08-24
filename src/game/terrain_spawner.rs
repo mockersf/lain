@@ -112,6 +112,7 @@ struct InTransitLot {
     material_color: Image,
     ethereal_color: Image,
     metallic_roughness: Image,
+    mountain_map: Vec<IVec2>,
     x: i32,
     z: i32,
 }
@@ -125,12 +126,13 @@ pub(crate) enum Occupying {
     Crystal,
     Tree,
     Bench(f32),
+    Mountain,
 }
 
 impl Occupying {
     pub(crate) fn is_free(&self) -> bool {
         match self {
-            Self::Crystal => false,
+            Self::Crystal | Self::Mountain => false,
             Self::Tree | Self::Bench(..) => true,
         }
     }
@@ -185,63 +187,71 @@ fn fill_empty_lots(
                             let mut rng = rand::thread_rng();
                             for building in building_lot {
                                 match building.1 {
-                                    Occupying::Crystal => lot.spawn_bundle(SceneBundle {
-                                        scene: building_assets.crystal.clone_weak(),
-                                        transform: Transform {
-                                            scale: Vec3::splat(1.0 / LOW_DEF as f32),
-                                            translation: Vec3::new(
-                                                (building.0.x - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                                0.03,
-                                                (building.0.y - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                            ),
+                                    Occupying::Crystal => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: building_assets.crystal.clone_weak(),
+                                            transform: Transform {
+                                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    0.03,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                ..default()
+                                            },
                                             ..default()
-                                        },
-                                        ..default()
-                                    }),
-                                    Occupying::Tree => lot.spawn_bundle(SceneBundle {
-                                        scene: if *plane == Plane::Material {
-                                            scenery_assets.tree.clone_weak()
-                                        } else {
-                                            scenery_assets.trunk.clone_weak()
-                                        },
-                                        transform: Transform {
-                                            scale: Vec3::splat(
-                                                1.0 / LOW_DEF as f32 * rng.gen_range(0.7..0.9),
-                                            ),
-                                            translation: Vec3::new(
-                                                (building.0.x - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                                0.03,
-                                                (building.0.y - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                            ),
-                                            rotation: Quat::from_rotation_y(rng.gen_range(
-                                                (FRAC_PI_4 * 9.0 / 10.0)..(FRAC_PI_4 * 11.0 / 10.0),
-                                            )),
-                                        },
-                                        ..default()
-                                    }),
-                                    Occupying::Bench(a) => lot.spawn_bundle(SceneBundle {
-                                        scene: if *plane == Plane::Material {
-                                            scenery_assets.bench.clone_weak()
-                                        } else {
-                                            scenery_assets.bench_damaged.clone_weak()
-                                        },
-                                        transform: Transform {
-                                            scale: Vec3::splat(0.5 / LOW_DEF as f32),
-                                            translation: Vec3::new(
-                                                (building.0.x - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                                0.03,
-                                                (building.0.y - LOW_DEF as i32 / 2) as f32
-                                                    / LOW_DEF as f32,
-                                            ),
-                                            rotation: Quat::from_rotation_y(*a),
-                                        },
-                                        ..default()
-                                    }),
+                                        });
+                                    }
+                                    Occupying::Tree => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: if *plane == Plane::Material {
+                                                scenery_assets.tree.clone_weak()
+                                            } else {
+                                                scenery_assets.trunk.clone_weak()
+                                            },
+                                            transform: Transform {
+                                                scale: Vec3::splat(
+                                                    1.0 / LOW_DEF as f32 * rng.gen_range(0.7..0.9),
+                                                ),
+                                                translation: Vec3::new(
+                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    0.03,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                rotation: Quat::from_rotation_y(rng.gen_range(
+                                                    (FRAC_PI_4 * 9.0 / 10.0)
+                                                        ..(FRAC_PI_4 * 11.0 / 10.0),
+                                                )),
+                                            },
+                                            ..default()
+                                        });
+                                    }
+                                    Occupying::Bench(a) => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: if *plane == Plane::Material {
+                                                scenery_assets.bench.clone_weak()
+                                            } else {
+                                                scenery_assets.bench_damaged.clone_weak()
+                                            },
+                                            transform: Transform {
+                                                scale: Vec3::splat(0.5 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    0.03,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                rotation: Quat::from_rotation_y(*a),
+                                            },
+                                            ..default()
+                                        });
+                                    }
+                                    Occupying::Mountain => (),
                                 };
                             }
                         }
@@ -276,6 +286,7 @@ fn fill_empty_lots(
                         metallic_roughness: terrain.metallic_roughness,
                         x: pos_x as i32,
                         z: pos_y as i32,
+                        mountain_map: terrain.simplified_map,
                     })
                     .unwrap();
                 })
@@ -284,6 +295,27 @@ fn fill_empty_lots(
             *in_transit += 1;
         }
         for lot in channel.1.try_iter() {
+            let material_lot = map
+                .lots
+                .entry((IVec2::new(lot.x, lot.z), Plane::Material))
+                .or_default();
+            for mountain in &lot.mountain_map {
+                material_lot.insert(
+                    IVec2::new(LOW_DEF as i32 - mountain.x - 1, mountain.y),
+                    Occupying::Mountain,
+                );
+            }
+            let ethereal_lot = map
+                .lots
+                .entry((IVec2::new(lot.x, lot.z), Plane::Ethereal))
+                .or_default();
+            for mountain in lot.mountain_map {
+                ethereal_lot.insert(
+                    IVec2::new(LOW_DEF as i32 - mountain.x - 1, mountain.y),
+                    Occupying::Mountain,
+                );
+            }
+
             let mesh_handle = meshes.add(lot.mesh);
             let mr_texture = textures.add(lot.metallic_roughness);
             let material_handled_lot = HandledLot {
@@ -321,58 +353,28 @@ fn fill_empty_lots(
             for i in 0..LOW_DEF {
                 for j in 0..LOW_DEF {
                     if rng.gen_bool(0.01) {
-                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Material)) {
-                            Entry::Occupied(mut o) => {
-                                let _ = o
-                                    .get_mut()
-                                    .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
-                            }
-                            Entry::Vacant(v) => {
-                                let mut lot = HashMap::new();
-                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
-                                v.insert(lot);
-                            }
-                        }
-                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Ethereal)) {
-                            Entry::Occupied(mut o) => {
-                                let _ = o
-                                    .get_mut()
-                                    .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
-                            }
-                            Entry::Vacant(v) => {
-                                let mut lot = HashMap::new();
-                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
-                                v.insert(lot);
-                            }
-                        }
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Tree);
                     } else if rng.gen_bool(0.005) {
                         let a = rng.gen_range(0.0..(2.0 * PI));
-                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Material)) {
-                            Entry::Occupied(mut o) => {
-                                let _ = o.get_mut().try_insert(
-                                    IVec2::new(i as i32, j as i32),
-                                    Occupying::Bench(a),
-                                );
-                            }
-                            Entry::Vacant(v) => {
-                                let mut lot = HashMap::new();
-                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
-                                v.insert(lot);
-                            }
-                        }
-                        match map.lots.entry((IVec2::new(lot.x, lot.z), Plane::Ethereal)) {
-                            Entry::Occupied(mut o) => {
-                                let _ = o.get_mut().try_insert(
-                                    IVec2::new(i as i32, j as i32),
-                                    Occupying::Bench(a),
-                                );
-                            }
-                            Entry::Vacant(v) => {
-                                let mut lot = HashMap::new();
-                                lot.insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
-                                v.insert(lot);
-                            }
-                        }
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
                     }
                 }
             }

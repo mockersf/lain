@@ -1,6 +1,6 @@
 use bevy::{
     math::Vec3,
-    prelude::{Color, Image, Mesh, Vec2},
+    prelude::{Color, IVec2, Image, Mesh, Vec2},
     render::{
         mesh::Indices,
         render_resource::{Extent3d, PrimitiveTopology, TextureDimension, TextureFormat},
@@ -147,12 +147,13 @@ impl HeightMap {
             Vec<[f32; 3]>, // vertices
             Vec<[f32; 3]>, // normals
             Vec<[f32; 2]>, // uvs
-            Vec<[f32; 3]>, // simplified vertices
+            Vec<IVec2>,    // simplified map
             Vec<u8>,       // colors material
             Vec<u8>,       // colors ethereal
             Vec<u8>,       // metallic_roughness
         ) {
-            let mut simplified_vertices = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
+            // let mut simplified_vertices = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
+            let mut map = Vec::with_capacity(LOW_DEF as usize * LOW_DEF as usize);
             let mut vertices = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut normals = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
             let mut uvs = Vec::with_capacity(HIGH_DEF as usize * HIGH_DEF as usize);
@@ -221,7 +222,12 @@ impl HeightMap {
                         } else {
                             elevation_block / FLATTENING
                         };
-                        simplified_vertices.push([xz.0 - 0.5, simple_height, xz.1 - 0.5]);
+                        if simple_height > PLATEAU_LEVEL {
+                            map.push(IVec2::new(
+                                (xz.0 * LOW_DEF as f32) as i32,
+                                (xz.1 * LOW_DEF as f32) as i32,
+                            ));
+                        }
                     }
                     vertices.push([xz.0 - 0.5, elevation_flattened, xz.1 - 0.5]);
                     normals.push([0.0, 0.0, 0.0]);
@@ -260,7 +266,7 @@ impl HeightMap {
                 vertices,
                 normals,
                 uvs,
-                simplified_vertices,
+                map,
                 colors_material,
                 colors_ethereal,
                 metallic_roughness,
@@ -271,7 +277,7 @@ impl HeightMap {
             positions,
             normals,
             uvs,
-            _simplified_positions,
+            simplified_map,
             material_colors,
             ethereal_colors,
             metallic_roughness,
@@ -281,11 +287,9 @@ impl HeightMap {
         );
         let mesh = vertices_as_mesh(positions, normals, uvs, HIGH_DEF);
 
-        // let simplified_mesh = vertices_as_mesh(simplified_positions, vec![], vec![], LOW_DEF);
-
         Terrain {
             mesh,
-            // simplified_mesh,
+            simplified_map,
             material_color: Image::new(
                 Extent3d {
                     width: LOW_DEF + 1,
@@ -387,7 +391,7 @@ fn vertices_as_mesh(
 }
 
 pub(crate) struct Terrain {
-    // pub(crate) simplified_mesh: Mesh,
+    pub(crate) simplified_map: Vec<IVec2>,
     pub(crate) mesh: Mesh,
     pub(crate) material_color: Image,
     pub(crate) ethereal_color: Image,
