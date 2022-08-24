@@ -6,6 +6,7 @@ use bevy::{
     tasks::AsyncComputeTaskPool,
     utils::{Entry, HashMap},
 };
+use bevy_easings::{EaseValue, Lerp};
 use crossbeam_channel::{Receiver, Sender};
 
 use crate::{
@@ -97,7 +98,7 @@ struct HandledLot {
 #[allow(clippy::type_complexity)]
 fn fill_empty_lots(
     mut commands: Commands,
-    mut lots: Query<(Entity, &mut EmptyLot)>,
+    mut lots: Query<(Entity, &mut EmptyLot, &mut Transform)>,
     (mut meshes, mut textures, mut materials): (
         ResMut<Assets<Mesh>>,
         ResMut<Assets<Image>>,
@@ -108,8 +109,9 @@ fn fill_empty_lots(
     channel: Res<MyChannel>,
     mut in_transit: Local<usize>,
     plane: Res<Plane>,
+    playing_state: Res<State<PlayingState>>,
 ) {
-    for (entity, mut position) in lots.iter_mut() {
+    for (entity, mut position, mut transform) in lots.iter_mut() {
         if let Some(mesh) = mesh_cache.get(&(IVec2::new(position.x, position.z), *plane)) {
             if !position.offscreen {
                 commands
@@ -128,6 +130,9 @@ fn fill_empty_lots(
                         plane: *plane,
                     })
                     .remove::<EmptyLot>();
+                if *playing_state.current() == PlayingState::SwitchingPlane {
+                    transform.rotation = Quat::from_axis_angle(Vec3::X, PI);
+                }
             } else {
                 commands.entity(entity).remove::<EmptyLot>();
             }
@@ -310,19 +315,13 @@ impl Plugin for SwitchingPlanePlugin {
 
 struct SwitchingTimer(Timer);
 
-fn change_plane(
-    mut commands: Commands,
-    mut plane: ResMut<Plane>,
-    mut light: Query<&mut DirectionalLight>,
-) {
+fn change_plane(mut commands: Commands, mut plane: ResMut<Plane>) {
     match *plane {
         Plane::Material => {
             *plane = Plane::Ethereal;
-            light.single_mut().color = Color::ALICE_BLUE;
         }
         Plane::Ethereal => {
             *plane = Plane::Material;
-            light.single_mut().color = Color::WHITE;
         }
     }
     commands.insert_resource(SwitchingTimer(Timer::from_seconds(1.0, false)));
@@ -335,6 +334,7 @@ fn tick(
     mut timer: ResMut<SwitchingTimer>,
     mut playing_state: ResMut<State<PlayingState>>,
     plane: Res<Plane>,
+    mut light: Query<&mut DirectionalLight>,
 ) {
     if timer.0.tick(time.delta()).just_finished() {
         playing_state.set(PlayingState::Playing).unwrap();
@@ -346,6 +346,19 @@ fn tick(
             (false, true) => Quat::from_axis_angle(Vec3::Z, PI * timer.0.percent()),
             (false, false) => Quat::from_axis_angle(Vec3::X, PI * timer.0.percent()),
         };
+    }
+
+    light.single_mut().color = match *plane {
+        Plane::Material => {
+            EaseValue(Color::CYAN)
+                .lerp(&EaseValue(Color::WHITE), &timer.0.percent())
+                .0
+        }
+        Plane::Ethereal => {
+            EaseValue(Color::WHITE)
+                .lerp(&EaseValue(Color::CYAN), &timer.0.percent())
+                .0
+        }
     }
 }
 
