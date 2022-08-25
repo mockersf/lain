@@ -17,7 +17,7 @@ use crate::{
     GameState,
 };
 
-use super::PlayingState;
+use super::{nests::ZombieNest, PlayingState};
 
 const BORDER: f32 = 20.0;
 
@@ -89,7 +89,6 @@ impl Plugin for TerrainSpawnerPlugin {
                     .with_system(move_camera)
                     .with_system(fill_empty_lots)
                     .with_system(refresh_visible_lots.after(fill_empty_lots))
-                    .with_system(cleanup_lots)
                     .with_system(intersection),
             );
     }
@@ -130,12 +129,13 @@ pub(crate) enum Occupying {
     Mountain,
     Tower,
     Block,
+    Coffin(f32),
 }
 
 impl Occupying {
     pub(crate) fn is_free(&self) -> bool {
         match self {
-            Self::Crystal | Self::Mountain | Self::Tower | Self::Block => false,
+            Self::Crystal | Self::Mountain | Self::Tower | Self::Block | Self::Coffin(_) => false,
             Self::Tree | Self::Bench(_) | Self::Rock(_) => true,
         }
     }
@@ -313,6 +313,27 @@ fn fill_empty_lots(
                                         });
                                     }
                                     Occupying::Mountain => (),
+                                    Occupying::Coffin(a) => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: if *plane == Plane::Material {
+                                                building_assets.coffin.clone_weak()
+                                            } else {
+                                                building_assets.coffin_old.clone_weak()
+                                            },
+                                            transform: Transform {
+                                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    delta,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                rotation: Quat::from_rotation_y(*a),
+                                            },
+                                            ..default()
+                                        });
+                                    }
                                 };
                             }
                         }
@@ -413,7 +434,27 @@ fn fill_empty_lots(
             let mut rng = rand::thread_rng();
             for i in 0..LOW_DEF {
                 for j in 0..LOW_DEF {
-                    if rng.gen_bool(0.01) {
+                    if rng.gen_bool(
+                        Vec2::new(lot.x as f32, lot.z as f32).distance_squared(Vec2::ZERO) as f64
+                            / 3000.0,
+                    ) {
+                        commands.spawn().insert(ZombieNest {
+                            map: IVec2::new(lot.x, lot.z),
+                            lot: IVec2::new(i as i32, j as i32),
+                            timer: Timer::from_seconds(5.0, true),
+                        });
+                        let a = rng.gen_range(0.0..(2.0 * PI));
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Coffin(a));
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Coffin(a));
+                    } else if rng.gen_bool(0.01) {
                         let _ = map
                             .lots
                             .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
@@ -452,16 +493,6 @@ fn fill_empty_lots(
                 }
             }
         }
-    }
-}
-
-#[allow(clippy::type_complexity)]
-fn cleanup_lots(
-    mut commands: Commands,
-    lots: Query<Entity, (Without<EmptyLot>, Without<Transform>, Without<Children>)>,
-) {
-    for entity in lots.iter() {
-        commands.entity(entity).despawn();
     }
 }
 
@@ -588,7 +619,7 @@ fn move_camera(
 
 pub(crate) struct RaycastSet;
 
-fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
+pub(crate) fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
     (
         IVec2::new(world.x.round() as i32, world.y.round() as i32),
         IVec2::new(
@@ -598,7 +629,7 @@ fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
     )
 }
 
-fn map_to_world(map: (IVec2, IVec2)) -> Vec2 {
+pub(crate) fn map_to_world(map: (IVec2, IVec2)) -> Vec2 {
     Vec2::new(
         map.0.x as f32 - (map.1.x as f32 + 0.5) / LOW_DEF as f32 + 0.5,
         map.0.y as f32 + (map.1.y as f32 + 0.5) / LOW_DEF as f32 - 0.5,

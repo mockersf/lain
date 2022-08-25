@@ -1,9 +1,11 @@
 pub(crate) mod builder;
 pub(crate) mod heightmap;
+pub(crate) mod nests;
 pub(crate) mod switcher;
 pub(crate) mod terra;
 pub(crate) mod terrain_spawner;
 pub(crate) mod ui;
+pub(crate) mod zombies;
 
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
 pub(crate) enum PlayingState {
@@ -16,10 +18,12 @@ pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_state(PlayingState::Playing)
-            .add_plugin(crate::game::terrain_spawner::TerrainSpawnerPlugin)
-            .add_plugin(crate::game::terra::TerraPlugin)
-            .add_plugin(crate::game::switcher::Plugin)
-            .add_plugin(crate::game::ui::Plugin)
-            .add_plugin(crate::game::builder::Plugin);
+            .add_plugin(terrain_spawner::TerrainSpawnerPlugin)
+            .add_plugin(terra::TerraPlugin)
+            .add_plugin(switcher::Plugin)
+            .add_plugin(ui::Plugin)
+            .add_plugin(builder::Plugin)
+            .add_plugin(nests::Plugin)
+            .add_plugin(zombies::Plugin);
     }
 }

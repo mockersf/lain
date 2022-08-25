@@ -276,7 +276,7 @@ fn setup(
 
     commands
         .spawn_bundle(SceneBundle {
-            scene: zombie_handles.mutant.clone_weak(),
+            scene: zombie_handles.zombie.clone_weak(),
             transform: Transform::from_translation(Vec3::new(-3.0, -2.0, 0.0)),
             ..default()
         })

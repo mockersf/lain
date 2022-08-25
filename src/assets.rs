@@ -79,7 +79,7 @@ pub(crate) struct ZombieAssets {
     #[asset(path = "zombies/animation.glb")]
     pub(crate) animations: Handle<Gltf>,
     #[asset(path = "zombies/model.glb#Scene0")]
-    pub(crate) mutant: Handle<Scene>,
+    pub(crate) zombie: Handle<Scene>,
 }
 
 #[derive(AssetCollection)]
@@ -92,6 +92,10 @@ pub(crate) struct BuildingAssets {
     pub(crate) ethereal_tower: Handle<Scene>,
     #[asset(path = "buildings/woodStructure_high.glb#Scene0")]
     pub(crate) block: Handle<Scene>,
+    #[asset(path = "buildings/coffin.glb#Scene0")]
+    pub(crate) coffin: Handle<Scene>,
+    #[asset(path = "buildings/coffinOld.glb#Scene0")]
+    pub(crate) coffin_old: Handle<Scene>,
 }
 
 #[derive(AssetCollection)]
@@ -157,7 +161,7 @@ fn done(world: &mut World) {
             let zombie_assets = world.get_resource_unchecked_mut::<ZombieAssets>().unwrap();
             let mut scenes = world.get_resource_unchecked_mut::<Assets<Scene>>().unwrap();
             let gltfs = world.get_resource::<Assets<Gltf>>().unwrap();
-            let scene = scenes.get_mut(&zombie_assets.mutant).unwrap();
+            let scene = scenes.get_mut(&zombie_assets.zombie).unwrap();
             let animations = gltfs.get(&zombie_assets.animations).unwrap();
             let mut player = AnimationPlayer::default();
             player
