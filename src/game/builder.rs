@@ -1,17 +1,21 @@
 use bevy::{
     pbr::NotShadowCaster,
     prelude::{
-        shape, AlphaMode, App, Assets, Color, Commands, Component, DespawnRecursiveExt, Entity,
-        FromWorld, Handle, Mesh, PbrBundle, Query, Res, ResMut, StandardMaterial, SystemSet,
-        Transform, Vec3, With,
+        shape, AlphaMode, App, Assets, BuildChildren, Color, Commands, Component,
+        DespawnRecursiveExt, Entity, FromWorld, Handle, Input, Mesh, MouseButton, PbrBundle, Query,
+        Res, ResMut, StandardMaterial, SystemSet, Transform, Vec3, With,
     },
+    scene::SceneBundle,
     utils::default,
+    window::Windows,
 };
+
+use crate::assets::BuildingAssets;
 
 use super::{
     heightmap::LOW_DEF,
     terra::Plane,
-    terrain_spawner::{CursorPosition, Map},
+    terrain_spawner::{CursorPosition, FilledLot, Map, Occupying},
     PlayingState,
 };
 
@@ -22,7 +26,9 @@ impl bevy::app::Plugin for Plugin {
             .add_system_set(SystemSet::on_enter(PlayingState::Building).with_system(display_cursor))
             .add_system_set(SystemSet::on_exit(PlayingState::Building).with_system(clear))
             .add_system_set(
-                SystemSet::on_update(PlayingState::Building).with_system(update_cursor),
+                SystemSet::on_update(PlayingState::Building)
+                    .with_system(update_cursor)
+                    .with_system(build),
             );
     }
 }
@@ -97,9 +103,63 @@ fn update_cursor(
         if *material == materials.invalid {
             *material = materials.valid.clone_weak();
         }
-    } else {
-        if *material == materials.valid {
-            *material = materials.invalid.clone_weak();
+    } else if *material == materials.valid {
+        *material = materials.invalid.clone_weak();
+    }
+}
+
+fn build(
+    mouse_button_input: Res<Input<MouseButton>>,
+    windows: Res<Windows>,
+    mut map: ResMut<Map>,
+    cursor_position: Res<CursorPosition>,
+    plane: Res<Plane>,
+    mut commands: Commands,
+    lots: Query<(Entity, &FilledLot)>,
+    building_assets: Res<BuildingAssets>,
+) {
+    if mouse_button_input.just_released(MouseButton::Left) {
+        if let Some(pos) = windows.primary().cursor_position() {
+            if pos.x < 140.0 && pos.y > 550.0 {
+                // in UI zone
+                return;
+            }
+        } else {
+            // outside
+            return;
+        }
+        map.lots
+            .get_mut(&(cursor_position.map, *plane))
+            .unwrap()
+            .insert(cursor_position.lot, Occupying::Tower);
+        map.lots
+            .get_mut(&(cursor_position.map, plane.next()))
+            .unwrap()
+            .insert(cursor_position.lot, Occupying::Block);
+        for (entity, lot) in &lots {
+            if lot.x == cursor_position.map.x && lot.z == cursor_position.map.y {
+                commands.entity(entity).add_children(|lot| {
+                    lot.spawn_bundle(SceneBundle {
+                        scene: if *plane == Plane::Material {
+                            building_assets.material_tower.clone_weak()
+                        } else {
+                            building_assets.ethereal_tower.clone_weak()
+                        },
+                        transform: Transform {
+                            scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                            translation: Vec3::new(
+                                -(cursor_position.lot.x - LOW_DEF as i32 / 2) as f32
+                                    / LOW_DEF as f32,
+                                0.03,
+                                (cursor_position.lot.y - LOW_DEF as i32 / 2) as f32
+                                    / LOW_DEF as f32,
+                            ),
+                            ..default()
+                        },
+                        ..default()
+                    });
+                })
+            }
         }
     }
 }

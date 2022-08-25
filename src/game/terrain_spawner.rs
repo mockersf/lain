@@ -95,7 +95,7 @@ impl Plugin for TerrainSpawnerPlugin {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct CursorPosition {
     pub(crate) world: Vec3,
     pub(crate) map: IVec2,
@@ -127,12 +127,14 @@ pub(crate) enum Occupying {
     Tree,
     Bench(f32),
     Mountain,
+    Tower,
+    Block,
 }
 
 impl Occupying {
     pub(crate) fn is_free(&self) -> bool {
         match self {
-            Self::Crystal | Self::Mountain => false,
+            Self::Crystal | Self::Mountain | Self::Tower | Self::Block => false,
             Self::Tree | Self::Bench(..) => true,
         }
     }
@@ -193,7 +195,7 @@ fn fill_empty_lots(
                                             transform: Transform {
                                                 scale: Vec3::splat(1.0 / LOW_DEF as f32),
                                                 translation: Vec3::new(
-                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                     0.03,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
@@ -216,7 +218,7 @@ fn fill_empty_lots(
                                                     1.0 / LOW_DEF as f32 * rng.gen_range(0.7..0.9),
                                                 ),
                                                 translation: Vec3::new(
-                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                     0.03,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
@@ -240,13 +242,51 @@ fn fill_empty_lots(
                                             transform: Transform {
                                                 scale: Vec3::splat(0.5 / LOW_DEF as f32),
                                                 translation: Vec3::new(
-                                                    (building.0.x - LOW_DEF as i32 / 2) as f32
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                     0.03,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
                                                 rotation: Quat::from_rotation_y(*a),
+                                            },
+                                            ..default()
+                                        });
+                                    }
+                                    Occupying::Tower => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: if *plane == Plane::Material {
+                                                building_assets.material_tower.clone_weak()
+                                            } else {
+                                                building_assets.ethereal_tower.clone_weak()
+                                            },
+                                            transform: Transform {
+                                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    0.03,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                ..default()
+                                            },
+                                            ..default()
+                                        });
+                                    }
+                                    Occupying::Block => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: building_assets.block.clone_weak(),
+                                            transform: Transform {
+                                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    0.03,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                ..default()
                                             },
                                             ..default()
                                         });

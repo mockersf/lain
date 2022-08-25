@@ -27,3 +27,12 @@ pub(crate) enum Plane {
     Material,
     Ethereal,
 }
+
+impl Plane {
+    pub(crate) fn next(&self) -> Self {
+        match self {
+            Plane::Material => Plane::Ethereal,
+            Plane::Ethereal => Plane::Material,
+        }
+    }
+}

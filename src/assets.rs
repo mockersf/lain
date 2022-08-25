@@ -85,6 +85,12 @@ pub(crate) struct ZombieAssets {
 pub(crate) struct BuildingAssets {
     #[asset(path = "buildings/detail_crystalLarge.glb#Scene0")]
     pub(crate) crystal: Handle<Scene>,
+    #[asset(path = "buildings/towerRound_sampleA.glb#Scene0")]
+    pub(crate) material_tower: Handle<Scene>,
+    #[asset(path = "buildings/towerSquare_sampleF.glb#Scene0")]
+    pub(crate) ethereal_tower: Handle<Scene>,
+    #[asset(path = "buildings/woodStructure_high.glb#Scene0")]
+    pub(crate) block: Handle<Scene>,
 }
 
 #[derive(AssetCollection)]
