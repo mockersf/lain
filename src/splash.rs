@@ -19,24 +19,23 @@ struct ScreenTag;
 
 #[derive(Default)]
 struct Screen {
-    done: Option<Timer>,
+    done: Timer,
 }
 
 pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Screen>()
-            .add_system_set(
-                SystemSet::on_enter(CURRENT_STATE)
-                    .with_system(setup)
-                    .with_system(pipeline_preloader),
-            )
-            .add_system_set(SystemSet::on_exit(CURRENT_STATE).with_system(tear_down))
-            .add_system_set(
-                SystemSet::on_update(CURRENT_STATE)
-                    .with_system(done)
-                    .with_system(animate_logo),
-            );
+        app.insert_resource(Screen {
+            done: Timer::from_seconds(1.0, false),
+        })
+        .add_system_set(SystemSet::on_enter(CURRENT_STATE).with_system(setup))
+        .add_system_set(SystemSet::on_exit(CURRENT_STATE).with_system(tear_down))
+        .add_system_set(
+            SystemSet::on_update(CURRENT_STATE)
+                .with_system(done)
+                .with_system(animate_logo)
+                .with_system(pipeline_preloader),
+        );
     }
 }
 
@@ -45,87 +44,160 @@ fn pipeline_preloader(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut skinned_mesh_inverse_bindposes_assets: ResMut<Assets<SkinnedMeshInverseBindposes>>,
+    screen: Res<Screen>,
+    mut loaded: Local<bool>,
 ) {
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(shape::Cube::new(0.1).into()),
-            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-            ..default()
-        })
-        .insert(ScreenTag);
+    if !*loaded && screen.done.percent() > 0.5 {
+        {
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(shape::Cube::new(0.1).into()),
+                    transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    ..default()
+                })
+                .insert(ScreenTag);
+        }
 
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(shape::Cube::new(0.1).into()),
-            material: materials.add(StandardMaterial {
-                base_color: Color::BLUE,
-                alpha_mode: AlphaMode::Blend,
-                ..default()
-            }),
-            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-            ..default()
-        })
-        .insert(ScreenTag);
+        {
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(shape::Cube::new(0.1).into()),
+                    material: materials.add(StandardMaterial {
+                        base_color: Color::BLUE,
+                        alpha_mode: AlphaMode::Blend,
+                        ..default()
+                    }),
+                    transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    ..default()
+                })
+                .insert(ScreenTag);
+        }
 
-    let inverse_bindposes =
-        skinned_mesh_inverse_bindposes_assets.add(SkinnedMeshInverseBindposes::from(vec![
-            Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
-            Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
-        ]));
+        {
+            let inverse_bindposes =
+                skinned_mesh_inverse_bindposes_assets.add(SkinnedMeshInverseBindposes::from(vec![
+                    Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+                    Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+                ]));
+            let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_POSITION,
+                vec![[0.0, 1.0, 0.0], [0.1, 1.0, 0.0], [0.2, 1.1, 0.0]],
+            );
+            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 3]);
+            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; 3]);
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_JOINT_INDEX,
+                vec![[0u16, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]],
+            );
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_JOINT_WEIGHT,
+                vec![
+                    [1.00, 0.00, 0.0, 0.0],
+                    [1.00, 0.00, 0.0, 0.0],
+                    [0.75, 0.25, 0.0, 0.0],
+                ],
+            );
+            mesh.set_indices(Some(Indices::U16(vec![0, 1, 2])));
 
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        vec![[0.0, 1.0, 0.0], [0.1, 1.0, 0.0], [0.2, 1.1, 0.0]],
-    );
-    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 3]);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; 3]);
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_JOINT_INDEX,
-        vec![[0u16, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]],
-    );
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_JOINT_WEIGHT,
-        vec![
-            [1.00, 0.00, 0.0, 0.0],
-            [1.00, 0.00, 0.0, 0.0],
-            [0.75, 0.25, 0.0, 0.0],
-        ],
-    );
-    mesh.set_indices(Some(Indices::U16(vec![0, 1, 2])));
+            let mesh = meshes.add(mesh);
+            let joint_0 = commands
+                .spawn_bundle((
+                    Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    GlobalTransform::default(),
+                    ScreenTag,
+                ))
+                .id();
+            let joint_1 = commands
+                .spawn_bundle((
+                    Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    GlobalTransform::default(),
+                    ScreenTag,
+                ))
+                .id();
+            commands.entity(joint_0).push_children(&[joint_1]);
 
-    let mesh = meshes.add(mesh);
-    let joint_0 = commands
-        .spawn_bundle((
-            Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-            GlobalTransform::default(),
-            ScreenTag,
-        ))
-        .id();
-    let joint_1 = commands
-        .spawn_bundle((
-            Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-            GlobalTransform::default(),
-            ScreenTag,
-        ))
-        .id();
-    commands.entity(joint_0).push_children(&[joint_1]);
+            let joint_entities = vec![joint_0, joint_1];
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh,
+                    transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    ..default()
+                })
+                .insert(SkinnedMesh {
+                    inverse_bindposes,
+                    joints: joint_entities,
+                })
+                .insert(ScreenTag);
+        }
 
-    let joint_entities = vec![joint_0, joint_1];
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh,
-            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-            ..default()
-        })
-        .insert(SkinnedMesh {
-            inverse_bindposes,
-            joints: joint_entities,
-        })
-        .insert(ScreenTag);
+        {
+            let inverse_bindposes =
+                skinned_mesh_inverse_bindposes_assets.add(SkinnedMeshInverseBindposes::from(vec![
+                    Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+                    Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+                ]));
+            let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_POSITION,
+                vec![[0.0, 1.0, 0.0], [0.1, 1.0, 0.0], [0.2, 1.1, 0.0]],
+            );
+            mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vec![[0.0, 0.0, 1.0, 1.0]; 3]);
+            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 3]);
+            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; 3]);
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_JOINT_INDEX,
+                vec![[0u16, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]],
+            );
+            mesh.insert_attribute(
+                Mesh::ATTRIBUTE_JOINT_WEIGHT,
+                vec![
+                    [1.00, 0.00, 0.0, 0.0],
+                    [1.00, 0.00, 0.0, 0.0],
+                    [0.75, 0.25, 0.0, 0.0],
+                ],
+            );
+            mesh.set_indices(Some(Indices::U16(vec![0, 1, 2])));
+
+            let mesh = meshes.add(mesh);
+            let joint_0 = commands
+                .spawn_bundle((
+                    Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    GlobalTransform::default(),
+                    ScreenTag,
+                ))
+                .id();
+            let joint_1 = commands
+                .spawn_bundle((
+                    Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    GlobalTransform::default(),
+                    ScreenTag,
+                ))
+                .id();
+            commands.entity(joint_0).push_children(&[joint_1]);
+
+            let joint_entities = vec![joint_0, joint_1];
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh,
+                    transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+                    material: materials.add(StandardMaterial {
+                        cull_mode: None,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .insert(SkinnedMesh {
+                    inverse_bindposes,
+                    joints: joint_entities,
+                })
+                .insert(ScreenTag);
+        }
+        *loaded = true;
+    }
 }
 
-fn setup(mut commands: Commands, mut screen: ResMut<Screen>, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     info!("Loading screen");
 
     let vleue_logo = asset_server.load("branding/logo.png");
@@ -187,7 +259,28 @@ fn setup(mut commands: Commands, mut screen: ResMut<Screen>, asset_server: Res<A
         })
         .insert(ScreenTag);
 
-    screen.done = Some(Timer::from_seconds(1., false));
+    let size = 5.0;
+    commands.spawn_bundle(DirectionalLightBundle {
+        transform: Transform {
+            rotation: Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -std::f32::consts::FRAC_PI_4),
+            ..default()
+        },
+        directional_light: DirectionalLight {
+            shadows_enabled: true,
+            shadow_projection: OrthographicProjection {
+                left: -size,
+                right: size,
+                bottom: -size,
+                top: size,
+                near: -size,
+                far: size,
+                ..Default::default()
+            },
+            illuminance: 20000.0,
+            ..default()
+        },
+        ..default()
+    });
 }
 
 #[derive(Component)]
@@ -207,10 +300,8 @@ fn done(
     mut state: ResMut<State<crate::GameState>>,
     loading_state: Res<State<AssetState>>,
 ) {
-    if let Some(ref mut timer) = screen.done {
-        if timer.tick(time.delta()).finished() && loading_state.current() == &AssetState::Done {
-            state.set(crate::GameState::Menu).unwrap();
-        }
+    if screen.done.tick(time.delta()).finished() && loading_state.current() == &AssetState::Done {
+        state.set(crate::GameState::Menu).unwrap();
     }
 }
 

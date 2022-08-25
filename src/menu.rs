@@ -281,28 +281,6 @@ fn setup(
             ..default()
         })
         .insert(ScreenTag);
-    let size = 5.0;
-    commands.spawn_bundle(DirectionalLightBundle {
-        transform: Transform {
-            rotation: Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -std::f32::consts::FRAC_PI_4),
-            ..default()
-        },
-        directional_light: DirectionalLight {
-            shadows_enabled: true,
-            shadow_projection: OrthographicProjection {
-                left: -size,
-                right: size,
-                bottom: -size,
-                top: size,
-                near: -size,
-                far: size,
-                ..Default::default()
-            },
-            illuminance: 20000.0,
-            ..default()
-        },
-        ..default()
-    });
 
     screen.first_load = false;
 }
