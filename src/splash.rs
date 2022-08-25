@@ -45,7 +45,7 @@ impl bevy::app::Plugin for Plugin {
         let renderer_app = app.sub_app_mut(RenderApp);
         let mut done = false;
         renderer_app.add_system_to_stage(RenderStage::Cleanup, move |cache: Res<PipelineCache>| {
-            if !done && cache.ready() >= 10 {
+            if !done && cache.count_ready() >= 10 {
                 let _ = tx.send(true);
                 done = true
             }
@@ -216,11 +216,9 @@ fn pipeline_preloader(
                     .insert(ScreenTag);
             }
             *loaded += 1;
-        } else if *loaded == 2 {
-            if screen.rx.try_recv().unwrap_or_default() {
-                let _ = loading_state.set(AllTheLoading::Done);
-                status.single_mut().sections[0].value = "Ready!".to_string();
-            }
+        } else if *loaded == 2 && screen.rx.try_recv().unwrap_or_default() {
+            let _ = loading_state.set(AllTheLoading::Done);
+            status.single_mut().sections[0].value = "Ready!".to_string();
         }
     }
 }
