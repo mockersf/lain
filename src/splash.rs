@@ -114,12 +114,12 @@ fn pipeline_preloader(
     let joint_entities = vec![joint_0, joint_1];
     commands
         .spawn_bundle(PbrBundle {
-            mesh: mesh.clone(),
+            mesh,
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
             ..default()
         })
         .insert(SkinnedMesh {
-            inverse_bindposes: inverse_bindposes.clone(),
+            inverse_bindposes,
             joints: joint_entities,
         })
         .insert(ScreenTag);
