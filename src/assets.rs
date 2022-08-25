@@ -33,8 +33,9 @@ macro_rules! impl_tuple_handle_clone_weak {
 all_tuples!(impl_tuple_handle_clone_weak, 0, 15, H);
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
-pub(crate) enum AssetState {
-    Loading,
+pub(crate) enum AllTheLoading {
+    Assets,
+    Pipelines,
     Done,
 }
 
@@ -42,17 +43,17 @@ pub(crate) struct AssetPlugin;
 
 impl Plugin for AssetPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_state(AssetState::Loading)
+        app.add_state(AllTheLoading::Assets)
             .add_loading_state(
-                LoadingState::new(AssetState::Loading)
-                    .continue_to_state(AssetState::Done)
+                LoadingState::new(AllTheLoading::Assets)
+                    .continue_to_state(AllTheLoading::Pipelines)
                     .with_collection::<RawUiAssets>()
                     .with_collection::<ZombieAssets>()
                     .with_collection::<BuildingAssets>()
                     .with_collection::<RawSceneryAssets>(),
             )
             .add_system_set(
-                SystemSet::on_enter(AssetState::Done).with_system(done.exclusive_system()),
+                SystemSet::on_enter(AllTheLoading::Pipelines).with_system(done.exclusive_system()),
             );
     }
 }

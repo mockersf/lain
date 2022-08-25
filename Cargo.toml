@@ -42,6 +42,7 @@ bevy = { version = "0.8", features = [
 
 [patch.crates-io]
 wgpu = { git = "https://github.com/mockersf/wgpu/", branch = "unconditional-clear-workaround" }
+bevy = { git = "https://github.com/mockersf/bevy/", branch = "pipeline-cache-check" }
 
 [features]
 default = []
