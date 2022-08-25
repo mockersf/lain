@@ -3,4 +3,5 @@
 /wasm/*.ts
 /wasm/*.js
 /wasm/*.wasm
+/wasm/assets/
 TODO.md
