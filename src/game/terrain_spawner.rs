@@ -170,10 +170,11 @@ fn fill_empty_lots(
                 commands
                     .entity(entity)
                     .with_children(|lot| {
+                        let delta = 0.04;
                         lot.spawn_bundle(PbrBundle {
                             mesh: mesh.mesh.clone_weak(),
                             material: mesh.color.clone_weak(),
-                            transform: Transform::from_xyz(0.0, 0.035, 0.0),
+                            transform: Transform::from_xyz(0.0, delta, 0.0),
                             ..default()
                         })
                         .insert_bundle((
@@ -197,7 +198,7 @@ fn fill_empty_lots(
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
-                                                    0.03,
+                                                    delta,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
@@ -220,7 +221,7 @@ fn fill_empty_lots(
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
-                                                    0.03,
+                                                    delta,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
@@ -244,7 +245,7 @@ fn fill_empty_lots(
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
-                                                    0.03,
+                                                    delta,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
@@ -265,7 +266,7 @@ fn fill_empty_lots(
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
-                                                    0.03,
+                                                    delta,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
@@ -282,7 +283,7 @@ fn fill_empty_lots(
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
-                                                    0.03,
+                                                    delta,
                                                     (building.0.y - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
                                                 ),
