@@ -126,6 +126,7 @@ pub(crate) enum Occupying {
     Crystal,
     Tree,
     Bench(f32),
+    Rock(f32),
     Mountain,
     Tower,
     Block,
@@ -135,7 +136,7 @@ impl Occupying {
     pub(crate) fn is_free(&self) -> bool {
         match self {
             Self::Crystal | Self::Mountain | Self::Tower | Self::Block => false,
-            Self::Tree | Self::Bench(..) => true,
+            Self::Tree | Self::Bench(_) | Self::Rock(_) => true,
         }
     }
 }
@@ -242,6 +243,25 @@ fn fill_empty_lots(
                                             },
                                             transform: Transform {
                                                 scale: Vec3::splat(0.5 / LOW_DEF as f32),
+                                                translation: Vec3::new(
+                                                    -(building.0.x - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                    delta,
+                                                    (building.0.y - LOW_DEF as i32 / 2) as f32
+                                                        / LOW_DEF as f32,
+                                                ),
+                                                rotation: Quat::from_rotation_y(*a),
+                                            },
+                                            ..default()
+                                        });
+                                    }
+                                    Occupying::Rock(a) => {
+                                        lot.spawn_bundle(SceneBundle {
+                                            scene: scenery_assets.rock.clone_weak(),
+                                            transform: Transform {
+                                                scale: Vec3::splat(
+                                                    1.0 / LOW_DEF as f32 * rng.gen_range(0.7..0.9),
+                                                ),
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
@@ -416,6 +436,18 @@ fn fill_empty_lots(
                             .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
                             .unwrap()
                             .try_insert(IVec2::new(i as i32, j as i32), Occupying::Bench(a));
+                    } else if rng.gen_bool(0.005) {
+                        let a = rng.gen_range(0.0..(2.0 * PI));
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Rock(a));
+                        let _ = map
+                            .lots
+                            .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
+                            .unwrap()
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Rock(a));
                     }
                 }
             }

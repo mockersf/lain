@@ -103,6 +103,8 @@ struct RawSceneryAssets {
     bench: Handle<Scene>,
     #[asset(path = "scenery/benchDamaged.glb#Scene0")]
     bench_damaged: Handle<Scene>,
+    #[asset(path = "scenery/detail_rocks.glb#Scene0")]
+    rock: Handle<Scene>,
 }
 
 pub(crate) struct SceneryAssets {
@@ -110,6 +112,7 @@ pub(crate) struct SceneryAssets {
     pub(crate) trunk: Handle<Scene>,
     pub(crate) bench: Handle<Scene>,
     pub(crate) bench_damaged: Handle<Scene>,
+    pub(crate) rock: Handle<Scene>,
 }
 
 pub(crate) struct UiAssets {
@@ -178,6 +181,7 @@ fn done(world: &mut World) {
                 trunk: scenery_assets.trunk,
                 bench: scenery_assets.bench,
                 bench_damaged: scenery_assets.bench_damaged,
+                rock: scenery_assets.rock,
             });
         }
     }
