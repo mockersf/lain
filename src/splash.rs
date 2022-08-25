@@ -1,4 +1,13 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::{
+        mesh::{
+            skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
+            Indices,
+        },
+        render_resource::PrimitiveTopology,
+    },
+};
 use rand::Rng;
 
 use crate::assets::AssetState;
@@ -16,8 +25,12 @@ struct Screen {
 pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Screen::default())
-            .add_system_set(SystemSet::on_enter(CURRENT_STATE).with_system(setup))
+        app.init_resource::<Screen>()
+            .add_system_set(
+                SystemSet::on_enter(CURRENT_STATE)
+                    .with_system(setup)
+                    .with_system(pipeline_preloader),
+            )
             .add_system_set(SystemSet::on_exit(CURRENT_STATE).with_system(tear_down))
             .add_system_set(
                 SystemSet::on_update(CURRENT_STATE)
@@ -25,6 +38,91 @@ impl bevy::app::Plugin for Plugin {
                     .with_system(animate_logo),
             );
     }
+}
+
+fn pipeline_preloader(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut skinned_mesh_inverse_bindposes_assets: ResMut<Assets<SkinnedMeshInverseBindposes>>,
+) {
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(shape::Cube::new(0.1).into()),
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            ..default()
+        })
+        .insert(ScreenTag);
+
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(shape::Cube::new(0.1).into()),
+            material: materials.add(StandardMaterial {
+                base_color: Color::BLUE,
+                alpha_mode: AlphaMode::Blend,
+                ..default()
+            }),
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            ..default()
+        })
+        .insert(ScreenTag);
+
+    let inverse_bindposes =
+        skinned_mesh_inverse_bindposes_assets.add(SkinnedMeshInverseBindposes::from(vec![
+            Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+            Mat4::from_translation(Vec3::new(-0.5, -1.0, 0.0)),
+        ]));
+
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    mesh.insert_attribute(
+        Mesh::ATTRIBUTE_POSITION,
+        vec![[0.0, 1.0, 0.0], [0.1, 1.0, 0.0], [0.2, 1.1, 0.0]],
+    );
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0.0, 0.0, 1.0]; 3]);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; 3]);
+    mesh.insert_attribute(
+        Mesh::ATTRIBUTE_JOINT_INDEX,
+        vec![[0u16, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]],
+    );
+    mesh.insert_attribute(
+        Mesh::ATTRIBUTE_JOINT_WEIGHT,
+        vec![
+            [1.00, 0.00, 0.0, 0.0],
+            [1.00, 0.00, 0.0, 0.0],
+            [0.75, 0.25, 0.0, 0.0],
+        ],
+    );
+    mesh.set_indices(Some(Indices::U16(vec![0, 1, 2])));
+
+    let mesh = meshes.add(mesh);
+    let joint_0 = commands
+        .spawn_bundle((
+            Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            GlobalTransform::default(),
+            ScreenTag,
+        ))
+        .id();
+    let joint_1 = commands
+        .spawn_bundle((
+            Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            GlobalTransform::default(),
+            ScreenTag,
+        ))
+        .id();
+    commands.entity(joint_0).push_children(&[joint_1]);
+
+    let joint_entities = vec![joint_0, joint_1];
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: mesh.clone(),
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            ..default()
+        })
+        .insert(SkinnedMesh {
+            inverse_bindposes: inverse_bindposes.clone(),
+            joints: joint_entities,
+        })
+        .insert(ScreenTag);
 }
 
 fn setup(mut commands: Commands, mut screen: ResMut<Screen>, asset_server: Res<AssetServer>) {
