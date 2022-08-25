@@ -60,15 +60,17 @@ fn tick(
         };
     }
 
+    let material = Color::WHITE;
+    let ethereal = Color::rgb(1.0, 0.7, 1.0);
     light.single_mut().color = match *plane {
         Plane::Material => {
-            EaseValue(Color::CYAN)
-                .lerp(&EaseValue(Color::WHITE), &timer.0.percent())
+            EaseValue(ethereal)
+                .lerp(&EaseValue(material), &timer.0.percent())
                 .0
         }
         Plane::Ethereal => {
-            EaseValue(Color::WHITE)
-                .lerp(&EaseValue(Color::CYAN), &timer.0.percent())
+            EaseValue(material)
+                .lerp(&EaseValue(ethereal), &timer.0.percent())
                 .0
         }
     }
