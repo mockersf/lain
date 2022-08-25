@@ -277,7 +277,7 @@ fn setup(
     commands
         .spawn_bundle(SceneBundle {
             scene: zombie_handles.mutant.clone_weak(),
-            transform: Transform::from_translation(Vec3::new(-3.0, -1.0, 0.0)),
+            transform: Transform::from_translation(Vec3::new(-3.0, -2.0, 0.0)),
             ..default()
         })
         .insert(ScreenTag);

@@ -75,9 +75,9 @@ struct RawUiAssets {
 
 #[derive(AssetCollection)]
 pub(crate) struct ZombieAssets {
-    #[asset(path = "zombies/all-in-one.glb")]
+    #[asset(path = "zombies/animation.glb")]
     pub(crate) animations: Handle<Gltf>,
-    #[asset(path = "zombies/all-in-one.glb#Scene0")]
+    #[asset(path = "zombies/model.glb#Scene0")]
     pub(crate) mutant: Handle<Scene>,
 }
 
@@ -160,7 +160,7 @@ fn done(world: &mut World) {
             let animations = gltfs.get(&zombie_assets.animations).unwrap();
             let mut player = AnimationPlayer::default();
             player
-                .play(animations.named_animations["Walk3"].clone_weak())
+                .play(animations.named_animations["Root|Root|Run"].clone_weak())
                 .repeat();
             scene.world.entity_mut(Entity::from_raw(1)).insert(player);
         }
