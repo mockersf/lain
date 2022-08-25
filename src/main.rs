@@ -26,7 +26,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .insert_resource(ClearColor(Color::rgb(0., 0., 0.01)));
 
-    #[cfg(not(target_arch = "wasm32"))]
     if cfg!(debug_assertions) {
         builder.insert_resource(bevy::log::LogSettings {
             level: bevy::log::Level::INFO,
