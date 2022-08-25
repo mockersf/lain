@@ -117,6 +117,8 @@ fn build(
     mut commands: Commands,
     lots: Query<(Entity, &FilledLot)>,
     building_assets: Res<BuildingAssets>,
+    cursor: Query<&Handle<StandardMaterial>, With<CursorSelection>>,
+    materials: Res<CursorMaterials>,
 ) {
     if mouse_button_input.just_released(MouseButton::Left) {
         if let Some(pos) = windows.primary().cursor_position() {
@@ -128,37 +130,40 @@ fn build(
             // outside
             return;
         }
-        map.lots
-            .get_mut(&(cursor_position.map, *plane))
-            .unwrap()
-            .insert(cursor_position.lot, Occupying::Tower);
-        map.lots
-            .get_mut(&(cursor_position.map, plane.next()))
-            .unwrap()
-            .insert(cursor_position.lot, Occupying::Block);
-        for (entity, lot) in &lots {
-            if lot.x == cursor_position.map.x && lot.z == cursor_position.map.y {
-                commands.entity(entity).add_children(|lot| {
-                    lot.spawn_bundle(SceneBundle {
-                        scene: if *plane == Plane::Material {
-                            building_assets.material_tower.clone_weak()
-                        } else {
-                            building_assets.ethereal_tower.clone_weak()
-                        },
-                        transform: Transform {
-                            scale: Vec3::splat(1.0 / LOW_DEF as f32),
-                            translation: Vec3::new(
-                                -(cursor_position.lot.x - LOW_DEF as i32 / 2) as f32
-                                    / LOW_DEF as f32,
-                                0.03,
-                                (cursor_position.lot.y - LOW_DEF as i32 / 2) as f32
-                                    / LOW_DEF as f32,
-                            ),
+
+        if *cursor.single() == materials.valid {
+            map.lots
+                .get_mut(&(cursor_position.map, *plane))
+                .unwrap()
+                .insert(cursor_position.lot, Occupying::Tower);
+            map.lots
+                .get_mut(&(cursor_position.map, plane.next()))
+                .unwrap()
+                .insert(cursor_position.lot, Occupying::Block);
+            for (entity, lot) in &lots {
+                if lot.x == cursor_position.map.x && lot.z == cursor_position.map.y {
+                    commands.entity(entity).add_children(|lot| {
+                        lot.spawn_bundle(SceneBundle {
+                            scene: if *plane == Plane::Material {
+                                building_assets.material_tower.clone_weak()
+                            } else {
+                                building_assets.ethereal_tower.clone_weak()
+                            },
+                            transform: Transform {
+                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                translation: Vec3::new(
+                                    -(cursor_position.lot.x - LOW_DEF as i32 / 2) as f32
+                                        / LOW_DEF as f32,
+                                    0.03,
+                                    (cursor_position.lot.y - LOW_DEF as i32 / 2) as f32
+                                        / LOW_DEF as f32,
+                                ),
+                                ..default()
+                            },
                             ..default()
-                        },
-                        ..default()
-                    });
-                })
+                        });
+                    })
+                }
             }
         }
     }
