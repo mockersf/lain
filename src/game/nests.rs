@@ -2,9 +2,9 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::{assets::ZombieAssets, game::zombies::Zombie, GameState};
+use crate::{assets::ZombieAssets, GameState};
 
-use super::terrain_spawner::map_to_world;
+use super::{terrain_spawner::map_to_world, zombies::IdleZombie};
 
 pub(crate) struct Plugin;
 
@@ -30,9 +30,10 @@ fn spawn_zombies(
     for mut nest in &mut nests {
         if nest.timer.tick(time.delta()).just_finished() {
             let position = map_to_world((nest.map, nest.lot));
+
             let mut transform = Transform::from_xyz(position.x, 0.2, position.y)
                 .looking_at(Vec3::ZERO, Vec3::Y)
-                .with_scale(Vec3::splat(0.03));
+                .with_scale(Vec3::splat(0.06));
             transform.rotate(Quat::from_rotation_y(PI));
             commands
                 .spawn_bundle(SceneBundle {
@@ -40,7 +41,7 @@ fn spawn_zombies(
                     transform,
                     ..default()
                 })
-                .insert(Zombie {});
+                .insert(IdleZombie);
         }
     }
 }

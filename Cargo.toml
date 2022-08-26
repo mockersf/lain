@@ -34,6 +34,7 @@ tracing = "0.1"
 crossbeam-channel = "0.5"
 interpolation = "0.2"
 material-icons = "0.2.0"
+polyanya = { git = "https://github.com/vleue/polyanya" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 bevy = { version = "0.8", features = [

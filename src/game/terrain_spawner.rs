@@ -17,6 +17,11 @@ use crate::{
     GameState,
 };
 
+#[derive(Default)]
+pub(crate) struct Pathfinding {
+    pub(crate) mesh: polyanya::Mesh,
+}
+
 use super::{nests::ZombieNest, PlayingState};
 
 const BORDER: f32 = 20.0;
@@ -81,6 +86,7 @@ impl Plugin for TerrainSpawnerPlugin {
         app.insert_resource(MyChannel(tx, rx))
             .init_resource::<VisibleLots>()
             .init_resource::<CursorPosition>()
+            .init_resource::<Pathfinding>()
             .insert_resource(map)
             .insert_resource(Plane::Material)
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_camera))
@@ -89,7 +95,8 @@ impl Plugin for TerrainSpawnerPlugin {
                     .with_system(move_camera)
                     .with_system(fill_empty_lots)
                     .with_system(refresh_visible_lots.after(fill_empty_lots))
-                    .with_system(intersection),
+                    .with_system(intersection)
+                    .with_system(update_pathfinding),
             );
     }
 }
@@ -137,6 +144,13 @@ impl Occupying {
         match self {
             Self::Crystal | Self::Mountain | Self::Tower | Self::Block | Self::Coffin(_) => false,
             Self::Tree | Self::Bench(_) | Self::Rock(_) => true,
+        }
+    }
+    #[inline(always)]
+    pub(crate) fn is_path_free(&self) -> bool {
+        match self {
+            Self::Mountain | Self::Tower | Self::Block => false,
+            Self::Crystal | Self::Tree | Self::Bench(_) | Self::Rock(_) | Self::Coffin(_) => true,
         }
     }
 }
@@ -282,7 +296,7 @@ fn fill_empty_lots(
                                                 building_assets.ethereal_tower.clone_weak()
                                             },
                                             transform: Transform {
-                                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                                scale: Vec3::splat(0.8 / LOW_DEF as f32),
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
@@ -632,6 +646,7 @@ pub(crate) fn world_to_map(world: Vec2) -> (IVec2, IVec2) {
     )
 }
 
+#[inline(always)]
 pub(crate) fn map_to_world(map: (IVec2, IVec2)) -> Vec2 {
     Vec2::new(
         map.0.x as f32 - (map.1.x as f32 + 0.5) / LOW_DEF as f32 + 0.5,
@@ -660,4 +675,236 @@ fn intersection(
     };
 
     pick_source.single_mut().cast_method = RayCastMethod::Screenspace(cursor_position);
+}
+
+fn update_pathfinding(map: Res<Map>, mut pathfinding: ResMut<Pathfinding>) {
+    if map.is_changed() {
+        info!("refreshing pathfinding mesh");
+        pathfinding.mesh =
+            new_mesh_from_map(&map, BORDER as isize, BORDER as isize, LOW_DEF as usize);
+    }
+}
+
+fn new_mesh_from_map(
+    map: &Map,
+    half_width: isize,
+    half_height: isize,
+    def: usize,
+) -> polyanya::Mesh {
+    let count = (half_width * 2 + 1) * (half_height * 2 + 1) * (def as isize).pow(2);
+    let mut mesh = polyanya::Mesh {
+        vertices: vec![
+            polyanya::Vertex {
+                coords: Vec2::ZERO,
+                polygons: vec![],
+                is_corner: false
+            };
+            count as usize
+        ],
+        polygons: vec![
+            polyanya::Polygon {
+                vertices: vec![],
+                is_one_way: false
+            };
+            count as usize
+        ],
+    };
+
+    for im in -half_width..=half_width {
+        for jm in -half_height..=half_height {
+            for il in 0..def as i32 {
+                for jl in 0..def as i32 {
+                    let coords = (IVec2::new(im as i32, jm as i32), IVec2::new(il, jl));
+                    let id = coords_to_polygon_id(coords, half_width, half_height) as isize;
+                    let top_right = is_obstacle(coords, map, half_width, half_height)
+                        .then_some(-1)
+                        .unwrap_or(id);
+
+                    let bottom_right = {
+                        let mut coords = coords;
+                        coords.1.y -= 1;
+                        if coords.1.y == -1 {
+                            coords.1.y = 4;
+                            coords.0.y -= 1;
+                        }
+                        is_obstacle(coords, map, half_width, half_height)
+                            .then_some(-1)
+                            .unwrap_or_else(|| {
+                                coords_to_polygon_id(coords, half_width, half_height)
+                            })
+                    } as isize;
+                    let top_left = {
+                        let mut coords = coords;
+                        coords.1.x -= 1;
+                        if coords.1.x == -1 {
+                            coords.1.x = 4;
+                            coords.0.x += 1;
+                        }
+                        is_obstacle(coords, map, half_width, half_height)
+                            .then_some(-1)
+                            .unwrap_or_else(|| {
+                                coords_to_polygon_id(coords, half_width, half_height)
+                            })
+                    } as isize;
+                    let bottom_left = {
+                        let mut coords = coords;
+                        coords.1.y -= 1;
+                        if coords.1.y == -1 {
+                            coords.1.y = 4;
+                            coords.0.y -= 1;
+                        }
+                        coords.1.x -= 1;
+                        if coords.1.x == -1 {
+                            coords.1.x = 4;
+                            coords.0.x += 1;
+                        }
+                        is_obstacle(coords, map, half_width, half_height)
+                            .then_some(-1)
+                            .unwrap_or_else(|| {
+                                coords_to_polygon_id(coords, half_width, half_height)
+                            })
+                    } as isize;
+
+                    mesh.vertices[id as usize] = polyanya::Vertex::new(
+                        map_to_world(coords) + Vec2::new(0.5, -0.5) / def as f32,
+                        vec![top_left, top_right, bottom_right, bottom_left],
+                    );
+                    if top_right != -1 {
+                        mesh.polygons[id as usize] = polyanya::Polygon {
+                            vertices: vec![
+                                id as usize + 1,
+                                id as usize,
+                                id as usize + (half_width as usize * 2 + 1) * def as usize,
+                                id as usize + 1 + (half_width as usize * 2 + 1) * def as usize,
+                            ],
+                            is_one_way: false,
+                        };
+                    }
+                }
+            }
+        }
+    }
+    mesh
+}
+
+#[inline(always)]
+fn is_obstacle(coords: (IVec2, IVec2), map: &Map, half_width: isize, half_height: isize) -> bool {
+    if !(-half_width..=half_width).contains(&(coords.0.x as isize))
+        || !(-half_height..=half_height).contains(&(coords.0.y as isize))
+    {
+        return true;
+    }
+    if map
+        .lots
+        .get(&(coords.0, Plane::Material))
+        .and_then(|lot| lot.get(&coords.1))
+        .filter(|o| !o.is_path_free())
+        .is_some()
+    {
+        return true;
+    }
+    false
+}
+
+#[inline(always)]
+fn coords_to_polygon_id(coords: (IVec2, IVec2), half_width: isize, half_height: isize) -> i32 {
+    let mut world = (map_to_world(coords) + Vec2::new(0.5, 0.5)) * LOW_DEF as f32;
+    world.x = LOW_DEF as f32 - world.x;
+
+    let world = IVec2::new(world.x.floor() as i32, world.y.floor() as i32)
+        + IVec2::new(
+            half_width as i32 * LOW_DEF as i32,
+            half_height as i32 * LOW_DEF as i32,
+        );
+    world.x + world.y * ((2 * half_width as i32 + 1) * LOW_DEF as i32)
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::prelude::IVec2;
+    use bevy::prelude::Vec2;
+
+    use super::coords_to_polygon_id as id;
+
+    #[test]
+    fn coords_id_size_0() {
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(0, 0)), 0, 0), 0);
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(1, 0)), 0, 0), 1);
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(0, 1)), 0, 0), 5);
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(1, 1)), 0, 0), 6);
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(4, 4)), 0, 0), 24);
+    }
+    #[test]
+    fn coords_id_size_1() {
+        assert_eq!(id((IVec2::new(1, 0), IVec2::new(0, 0)), 1, 1), 75);
+        assert_eq!(id((IVec2::new(0, 0), IVec2::new(0, 0)), 1, 1), 80);
+        assert_eq!(id((IVec2::new(-1, 0), IVec2::new(0, 0)), 1, 1), 85);
+    }
+    #[test]
+    fn coords_id_size_15() {
+        assert_eq!(id((IVec2::new(-15, -15), IVec2::new(0, 0)), 15, 15), 150);
+        assert_eq!(id((IVec2::new(-15, -15), IVec2::new(1, 0)), 15, 15), 151);
+        assert_eq!(id((IVec2::new(15, -15), IVec2::new(0, 0)), 15, 15), 0);
+        assert_eq!(id((IVec2::new(-15, -15), IVec2::new(0, 1)), 15, 15), 305);
+        assert_eq!(id((IVec2::new(-14, -15), IVec2::new(0, 0)), 15, 15), 145);
+        assert_eq!(id((IVec2::new(-14, -15), IVec2::new(4, 0)), 15, 15), 149);
+        assert_eq!(id((IVec2::new(-13, -15), IVec2::new(0, 0)), 15, 15), 140);
+        assert_eq!(id((IVec2::new(-3, -15), IVec2::new(0, 0)), 15, 15), 90);
+        assert_eq!(id((IVec2::new(7, -15), IVec2::new(0, 0)), 15, 15), 40);
+        assert_eq!(id((IVec2::new(-15, -14), IVec2::new(4, 0)), 15, 15), 929);
+    }
+
+    use super::new_mesh_from_map;
+
+    #[test]
+    fn mesh_generation() {
+        let map = super::Map {
+            lots: Default::default(),
+        };
+        let mesh = new_mesh_from_map(&map, 0, 0, 5);
+        // dbg!(&mesh.vertices);
+        dbg!(&mesh.polygons);
+        dbg!(mesh.vertices.len());
+        // assert!(false);
+    }
+
+    #[test]
+    fn path_through_0() {
+        let map = super::Map {
+            lots: Default::default(),
+        };
+        let mesh = new_mesh_from_map(&map, 0, 0, 5);
+
+        let from = Vec2::new(0.2, 0.0);
+        let to = Vec2::new(-0.2, 0.0);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+
+        let from = Vec2::new(0.2, 0.2);
+        let to = Vec2::new(-0.2, -0.2);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+    }
+
+    #[test]
+    fn path_through_1() {
+        let map = super::Map {
+            lots: Default::default(),
+        };
+        let mesh = new_mesh_from_map(&map, 1, 1, 5);
+
+        let from = Vec2::new(0.2, 0.0);
+        let to = Vec2::new(-0.2, 0.0);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+
+        let from = Vec2::new(0.2, 0.2);
+        let to = Vec2::new(-0.2, -0.2);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+
+        let from = Vec2::new(0.4, 0.4);
+        let to = Vec2::new(-0.4, -0.4);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+
+        let from = Vec2::new(1.0, 0.0);
+        let to = Vec2::new(-1.0, 0.0);
+        assert_eq!(mesh.path(from, to).len, from.distance(to));
+    }
 }

@@ -1670,6 +1670,7 @@ version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "518faa5064866338b013ff9b2350dc318e14cc4fcd6cb8206d7e7c9886c98815"
 dependencies = [
+ "approx",
  "bytemuck",
  "serde",
 ]
@@ -2049,6 +2050,7 @@ dependencies = [
  "crossbeam-channel",
  "interpolation",
  "material-icons",
+ "polyanya",
  "rand",
  "tracing",
 ]
@@ -2633,6 +2635,15 @@ dependencies = [
  "crc32fast",
  "deflate",
  "miniz_oxide",
+]
+
+[[package]]
+name = "polyanya"
+version = "0.1.0"
+source = "git+https://github.com/vleue/polyanya#a20375d76027ae4d262e6b341c08943742505258"
+dependencies = [
+ "glam",
+ "hashbrown",
 ]
 
 [[package]]
