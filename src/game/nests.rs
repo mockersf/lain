@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 
 use crate::{assets::ZombieAssets, game::zombies::Zombie, GameState};
@@ -28,12 +30,14 @@ fn spawn_zombies(
     for mut nest in &mut nests {
         if nest.timer.tick(time.delta()).just_finished() {
             let position = map_to_world((nest.map, nest.lot));
+            let mut transform = Transform::from_xyz(position.x, 0.2, position.y)
+                .looking_at(Vec3::ZERO, Vec3::Y)
+                .with_scale(Vec3::splat(0.03));
+            transform.rotate(Quat::from_rotation_y(PI));
             commands
                 .spawn_bundle(SceneBundle {
                     scene: zombie_assets.zombie.clone_weak(),
-                    transform: Transform::from_xyz(position.x, 0.2, position.y)
-                        .looking_at(Vec3::ZERO, Vec3::Y)
-                        .with_scale(Vec3::splat(0.03)),
+                    transform,
                     ..default()
                 })
                 .insert(Zombie {});
