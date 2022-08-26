@@ -24,7 +24,7 @@ pub(crate) struct Pathfinding {
 
 use super::{nests::ZombieNest, PlayingState};
 
-const BORDER: f32 = 20.0;
+const BORDER: f32 = 15.0;
 
 #[cfg(target = "wasm32-unknown-unknown")]
 const CHANNEL_SIZE: usize = 1;
