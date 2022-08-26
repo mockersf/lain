@@ -438,17 +438,20 @@ fn fill_empty_lots(
                         Vec2::new(lot.x as f32, lot.z as f32).distance_squared(Vec2::ZERO) as f64
                             / 3000.0,
                     ) {
-                        commands.spawn().insert(ZombieNest {
-                            map: IVec2::new(lot.x, lot.z),
-                            lot: IVec2::new(i as i32, j as i32),
-                            timer: Timer::from_seconds(5.0, true),
-                        });
                         let a = rng.gen_range(0.0..(2.0 * PI));
-                        let _ = map
+                        if map
                             .lots
                             .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Material))
                             .unwrap()
-                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Coffin(a));
+                            .try_insert(IVec2::new(i as i32, j as i32), Occupying::Coffin(a))
+                            .is_ok()
+                        {
+                            commands.spawn().insert(ZombieNest {
+                                map: IVec2::new(lot.x, lot.z),
+                                lot: IVec2::new(i as i32, j as i32),
+                                timer: Timer::from_seconds(5.0, true),
+                            });
+                        }
                         let _ = map
                             .lots
                             .get_mut(&(IVec2::new(lot.x, lot.z), Plane::Ethereal))
