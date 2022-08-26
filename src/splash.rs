@@ -305,7 +305,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(ScreenTag);
 
-    let size = 5.0;
+    let size = 15.0;
     commands.spawn_bundle(DirectionalLightBundle {
         transform: Transform {
             rotation: Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -std::f32::consts::FRAC_PI_4),
