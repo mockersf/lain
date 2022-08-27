@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 
 use crate::{
@@ -37,6 +39,8 @@ fn move_zombies(
         let tr = transform.translation;
         let target = zombie.path.path[zombie.current_path];
         let target = Vec3::new(target.x, 0.0, target.y);
+        transform.look_at(target, Vec3::Y);
+        transform.rotate(Quat::from_rotation_y(PI));
         transform.translation += (target - tr).normalize() * time.delta_seconds() * 0.25;
         if transform.translation.distance_squared(Vec3::ZERO) < 0.01 {
             commands.entity(entity).despawn_recursive();

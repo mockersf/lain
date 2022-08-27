@@ -33,7 +33,7 @@ fn spawn_zombies(
 
             let mut transform = Transform::from_xyz(position.x, 0.2, position.y)
                 .looking_at(Vec3::ZERO, Vec3::Y)
-                .with_scale(Vec3::splat(0.06));
+                .with_scale(Vec3::splat(0.05));
             transform.rotate(Quat::from_rotation_y(PI));
             commands
                 .spawn_bundle(SceneBundle {

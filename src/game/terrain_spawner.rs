@@ -296,7 +296,7 @@ fn fill_empty_lots(
                                                 building_assets.ethereal_tower.clone_weak()
                                             },
                                             transform: Transform {
-                                                scale: Vec3::splat(0.8 / LOW_DEF as f32),
+                                                scale: Vec3::splat(0.6 / LOW_DEF as f32),
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,
