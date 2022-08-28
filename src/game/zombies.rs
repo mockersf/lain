@@ -26,6 +26,7 @@ impl bevy::app::Plugin for Plugin {
 pub(crate) struct IdleZombie {
     pub(crate) plane: Plane,
     pub(crate) life: f32,
+    pub(crate) speed: f32,
 }
 
 #[derive(Component)]
@@ -34,6 +35,7 @@ pub(crate) struct Zombie {
     pub(crate) current_path: usize,
     pub(crate) plane: Plane,
     pub(crate) life: f32,
+    pub(crate) speed: f32,
 }
 
 fn move_zombies(
@@ -51,7 +53,8 @@ fn move_zombies(
                 let target = Vec3::new(target.x, 0.0, target.y);
                 transform.look_at(target, Vec3::Y);
                 transform.rotate(Quat::from_rotation_y(PI));
-                transform.translation += (target - tr).normalize() * time.delta_seconds() * 0.25;
+                transform.translation +=
+                    (target - tr).normalize() * time.delta_seconds() * (0.2 + zombie.speed);
                 if transform.translation.distance_squared(Vec3::ZERO) < 0.01 {
                     commands.entity(entity).despawn_recursive();
                     if let Some(life) = stats.life.checked_sub(1) {
@@ -80,6 +83,7 @@ fn refresh_zombie_path(
                 current_path: 0,
                 plane: idle.plane,
                 life: idle.life,
+                speed: idle.speed,
             });
         }
         commands.entity(zombie).remove::<IdleZombie>();
@@ -97,6 +101,7 @@ fn refresh_zombie_path(
                 .insert(IdleZombie {
                     plane: zombie.plane,
                     life: zombie.life,
+                    speed: zombie.speed,
                 });
         }
     } else {
@@ -112,6 +117,7 @@ fn refresh_zombie_path(
                         .insert(IdleZombie {
                             plane: zombie.plane,
                             life: zombie.life,
+                            speed: zombie.speed,
                         });
                 }
             }

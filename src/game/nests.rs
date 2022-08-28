@@ -57,7 +57,8 @@ fn spawn_zombies(
                 .insert_bundle((
                     IdleZombie {
                         plane: zombie_plane,
-                        life: stats.time.elapsed_secs() / 2.0,
+                        life: stats.time.elapsed_secs() / 3.5,
+                        speed: stats.time.elapsed_secs() / 100.0,
                     },
                     GameTag,
                 ));

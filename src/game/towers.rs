@@ -94,7 +94,7 @@ fn move_missiles(
                 transform.translation +=
                     (target.translation - tr).normalize() * time.delta_seconds() * 2.0;
 
-                if transform.translation.distance_squared(target.translation) < 0.01 {
+                if transform.translation.distance_squared(target.translation) < 0.005 {
                     commands.entity(entity).despawn();
                     zombie.life -= missile.strength;
                 }
