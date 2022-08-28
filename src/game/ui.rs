@@ -14,7 +14,8 @@ pub(crate) struct Plugin;
 
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
+        app.init_resource::<IsBuilding>()
+            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
             .add_system_set(
                 SystemSet::on_update(GameState::Playing)
                     .with_system(button_system)
@@ -61,6 +62,8 @@ fn setup(
     stats: Res<Stats>,
 ) {
     info!("loading UI");
+
+    commands.insert_resource(IsBuilding::default());
 
     let button_handle = ui_handles.button_handle.clone_weak();
     let button = buttons.get(&button_handle).unwrap();
@@ -250,13 +253,16 @@ fn setup(
         });
 }
 
+#[derive(Default)]
+struct IsBuilding(bool);
+
 fn button_system(
     interaction_query: Query<(&Interaction, &ButtonId<UiButtons>, Changed<Interaction>)>,
     mut text_query: Query<(&mut Text, &ButtonText<UiButtons>)>,
     mut camera: Query<&mut Transform, With<Camera>>,
     time: Res<Time>,
     mut playing_state: ResMut<State<PlayingState>>,
-    mut building: Local<bool>,
+    mut building: ResMut<IsBuilding>,
 ) {
     if *playing_state.current() != PlayingState::SwitchingPlane {
         for (interaction, button_id, changed) in interaction_query.iter() {
@@ -277,17 +283,17 @@ fn button_system(
                         for (mut text, button) in &mut text_query {
                             if button.0 == UiButtons::BuildTower {
                                 text.sections[0].value = UiButtons::BuildTower.into();
-                                *building = false;
+                                building.0 = false;
                             }
                         }
                     }
                     (UiButtons::BuildTower, true) => {
-                        if *building {
+                        if building.0 {
                             playing_state.set(PlayingState::Playing).unwrap();
                             for (mut text, button) in &mut text_query {
                                 if button.0 == UiButtons::BuildTower {
                                     text.sections[0].value = UiButtons::BuildTower.into();
-                                    *building = false;
+                                    building.0 = false;
                                 }
                             }
                         } else {
@@ -295,7 +301,7 @@ fn button_system(
                             for (mut text, button) in &mut text_query {
                                 if button.0 == UiButtons::BuildTower {
                                     text.sections[0].value = UiButtons::Cancel.into();
-                                    *building = true;
+                                    building.0 = true;
                                 }
                             }
                         }

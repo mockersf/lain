@@ -125,6 +125,7 @@ impl Plugin for TerrainSpawnerPlugin {
             .init_resource::<VisibleLots>()
             .init_resource::<CursorPosition>()
             .init_resource::<Pathfinding>()
+            .init_resource::<MeshCache>()
             .insert_resource(map)
             .insert_resource(Plane::Material)
             .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup_camera))
@@ -146,9 +147,27 @@ pub(crate) struct CursorPosition {
     pub(crate) lot: IVec2,
 }
 
-fn setup_camera(mut camera: Query<&mut Transform, With<Camera>>) {
+fn setup_camera(mut commands: Commands, mut camera: Query<&mut Transform, With<Camera>>) {
     let mut transform = camera.single_mut();
     *transform = Transform::from_xyz(0.0, 5.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
+    commands.insert_resource(VisibleLots::default());
+    commands.insert_resource(CursorPosition::default());
+    commands.insert_resource(Pathfinding::default());
+    commands.insert_resource(MeshCache::default());
+
+    let mut crystal = HashMap::new();
+    crystal.insert(
+        IVec2::new(LOW_DEF as i32 / 2, LOW_DEF as i32 / 2),
+        Occupying::Crystal,
+    );
+    let mut map = Map::default();
+    map.lots
+        .insert((IVec2::new(0, 0), Plane::Material), crystal.clone());
+    map.lots
+        .insert((IVec2::new(0, 0), Plane::Ethereal), crystal);
+    commands.insert_resource(map);
+    commands.insert_resource(Plane::Material);
+    commands.insert_resource(TerraNoises::new())
 }
 
 struct InTransitLot {
@@ -198,6 +217,9 @@ pub(crate) struct Map {
     pub(crate) lots: HashMap<(IVec2, Plane), HashMap<IVec2, Occupying>>,
 }
 
+#[derive(Default)]
+struct MeshCache(HashMap<(IVec2, Plane), HandledLot>);
+
 #[allow(clippy::type_complexity)]
 fn fill_empty_lots(
     mut commands: Commands,
@@ -207,7 +229,7 @@ fn fill_empty_lots(
         ResMut<Assets<Image>>,
         ResMut<Assets<StandardMaterial>>,
     ),
-    mut mesh_cache: Local<HashMap<(IVec2, Plane), HandledLot>>,
+    mut mesh_cache: ResMut<MeshCache>,
     noises: Res<TerraNoises>,
     channel: Res<MyChannel>,
     mut in_transit: Local<usize>,
@@ -219,7 +241,10 @@ fn fill_empty_lots(
     pathfinding: Res<Pathfinding>,
 ) {
     for (entity, mut position, mut transform) in lots.iter_mut() {
-        if let Some(mesh) = mesh_cache.get(&(IVec2::new(position.x, position.z), *plane)) {
+        if let Some(mesh) = mesh_cache
+            .0
+            .get(&(IVec2::new(position.x, position.z), *plane))
+        {
             if !position.offscreen {
                 commands
                     .entity(entity)
@@ -476,11 +501,11 @@ fn fill_empty_lots(
                 }),
             };
             *in_transit -= 1;
-            mesh_cache.insert(
+            mesh_cache.0.insert(
                 (IVec2::new(lot.x, lot.z), Plane::Material),
                 material_handled_lot,
             );
-            mesh_cache.insert(
+            mesh_cache.0.insert(
                 (IVec2::new(lot.x, lot.z), Plane::Ethereal),
                 ethereal_handled_lot,
             );
@@ -559,7 +584,7 @@ fn fill_empty_lots(
 }
 
 #[derive(Default)]
-pub(crate) struct VisibleLots(HashMap<IVec2, (Entity, Plane)>);
+struct VisibleLots(HashMap<IVec2, (Entity, Plane)>);
 
 fn refresh_visible_lots(
     mut commands: Commands,

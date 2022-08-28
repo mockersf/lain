@@ -9,7 +9,7 @@ pub(crate) struct TerraNoises {
 }
 
 impl TerraNoises {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             material_seed: thread_rng().gen(),
         }

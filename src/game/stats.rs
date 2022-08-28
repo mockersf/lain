@@ -28,7 +28,9 @@ pub(crate) struct Stats {
     pub(crate) killed: u32,
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, mut state: ResMut<State<PlayingState>>) {
+    let _ = state.overwrite_set(PlayingState::Playing);
+
     commands.insert_resource(Stats {
         life: 20,
         time: Stopwatch::new(),
