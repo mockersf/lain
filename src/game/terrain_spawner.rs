@@ -490,7 +490,7 @@ fn fill_empty_lots(
                             IVec2::new(lot.x, lot.z),
                             IVec2::new(i as i32, j as i32),
                         ));
-                        if dbg!(pathfinding.mesh.path(world, Vec2::ZERO)).complete {
+                        if pathfinding.mesh.path(world, Vec2::ZERO).complete {
                             let a = rng.gen_range(0.0..(2.0 * PI));
                             if map
                                 .lots
