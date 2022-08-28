@@ -2,6 +2,8 @@ use bevy::{prelude::*, time::Stopwatch};
 
 use crate::GameState;
 
+use super::PlayingState;
+
 #[derive(Component)]
 pub(crate) struct GameTag;
 
@@ -43,7 +45,12 @@ fn you_lost(mut state: ResMut<Stats>, mut game_state: ResMut<State<GameState>>, 
     state.time.tick(time.delta());
 }
 
-fn despawn_all_the_things(mut commands: Commands, entities: Query<Entity, With<GameTag>>) {
+fn despawn_all_the_things(
+    mut commands: Commands,
+    entities: Query<Entity, With<GameTag>>,
+    mut state: ResMut<State<PlayingState>>,
+) {
+    let _ = state.overwrite_set(PlayingState::Playing);
     for entity in &entities {
         commands.entity(entity).despawn_recursive();
     }
