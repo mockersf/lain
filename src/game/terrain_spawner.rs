@@ -148,7 +148,7 @@ pub(crate) struct CursorPosition {
 
 fn setup_camera(mut camera: Query<&mut Transform, With<Camera>>) {
     let mut transform = camera.single_mut();
-    *transform = Transform::from_xyz(0.0, 4.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
+    *transform = Transform::from_xyz(0.0, 5.0, -0.5).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
 }
 
 struct InTransitLot {

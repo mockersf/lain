@@ -30,7 +30,7 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(Stats {
         life: 20,
         time: Stopwatch::new(),
-        credits: 20,
+        credits: 50,
         killed: 0,
     });
 }
