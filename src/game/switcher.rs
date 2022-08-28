@@ -31,6 +31,7 @@ impl bevy::app::Plugin for Plugin {
 
 struct SwitchingTimer(Timer);
 
+#[allow(clippy::type_complexity)]
 fn change_plane(
     mut commands: Commands,
     mut plane: ResMut<Plane>,
@@ -46,7 +47,7 @@ fn change_plane(
     }
     commands.insert_resource(SwitchingTimer(Timer::from_seconds(1.0, false)));
     for mut visibility in &mut zombies {
-        if visibility.is_visible == true {
+        if visibility.is_visible {
             visibility.is_visible = false;
         }
     }
@@ -90,6 +91,7 @@ fn tick(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn clear(
     mut commands: Commands,
     lots: Query<(Entity, &FilledLot)>,

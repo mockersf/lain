@@ -109,7 +109,7 @@ fn setup(mut commands: Commands, ui_handles: Res<UiAssets>, stats: Res<Stats>) {
             text: Text::from_section(
                 format!("you survived {:.1} seconds", stats.time.elapsed_secs(),),
                 TextStyle {
-                    font: font_details.clone(),
+                    font: font_details,
                     color: crate::ui_helper::ColorScheme::TEXT,
                     font_size: 40.,
                     ..Default::default()
@@ -152,7 +152,7 @@ fn setup(mut commands: Commands, ui_handles: Res<UiAssets>, stats: Res<Stats>) {
 
     commands
         .spawn_bundle(bevy_ninepatch::NinePatchBundle {
-            style: panel_style.clone(),
+            style: panel_style,
             nine_patch_data: bevy_ninepatch::NinePatchData::with_single_content(
                 panel_handles.1,
                 panel_handles.0,
