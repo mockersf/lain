@@ -342,9 +342,9 @@ fn gamepad_input_system(
                 Some(0) => {
                     let _ = state.set(crate::GameState::Playing);
                 }
-                Some(1) => {
-                    let _ = state.set(crate::GameState::About);
-                }
+                // Some(1) => {
+                //     let _ = state.set(crate::GameState::About);
+                // }
                 Some(2) => {
                     let _ = state.set(crate::GameState::Exit);
                 }
@@ -394,9 +394,9 @@ fn keyboard_input_system(
             Some(0) => {
                 let _ = state.set(crate::GameState::Playing);
             }
-            Some(1) => {
-                let _ = state.set(crate::GameState::About);
-            }
+            // Some(1) => {
+            //     let _ = state.set(crate::GameState::About);
+            // }
             Some(2) => {
                 let _ = state.set(crate::GameState::Exit);
             }

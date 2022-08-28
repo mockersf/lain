@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub(crate) enum GameState {
     Splash,
     Menu,
-    About,
+    // About,
     Playing,
     // Paused,
     // Lost,
