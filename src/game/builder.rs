@@ -78,7 +78,7 @@ fn display_cursor(
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
         })
-        .insert_bundle((CursorSelection, NotShadowCaster));
+        .insert_bundle((CursorSelection, NotShadowCaster, GameTag));
 }
 
 #[derive(Component)]
