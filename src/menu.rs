@@ -79,12 +79,15 @@ fn setup(
     mut keyboard_input: ResMut<Input<KeyCode>>,
     mut gamepad_input: ResMut<Input<GamepadButton>>,
     mut camera: Query<&mut Transform, With<Camera>>,
+    mut light: Query<&mut DirectionalLight>,
 ) {
     info!("Loading screen");
 
     let mut transform = camera.single_mut();
     *transform = Transform::from_translation(Vec3::new(-1.0, 2.0, 10.0))
         .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y);
+
+    light.single_mut().color = Color::WHITE;
 
     commands.insert_resource(WinitSettings {
         focused_mode: UpdateMode::Reactive {
