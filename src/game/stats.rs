@@ -9,25 +9,29 @@ pub(crate) struct Plugin;
 
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Stats {
-            life: 0,
-            time: Stopwatch::new(),
-        })
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
-        .add_system_set(SystemSet::on_update(GameState::Playing).with_system(you_lost))
-        .add_system_set(SystemSet::on_exit(GameState::Playing).with_system(despawn_all_the_things));
+        app.init_resource::<Stats>()
+            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
+            .add_system_set(SystemSet::on_update(GameState::Playing).with_system(you_lost))
+            .add_system_set(
+                SystemSet::on_exit(GameState::Playing).with_system(despawn_all_the_things),
+            );
     }
 }
 
+#[derive(Default)]
 pub(crate) struct Stats {
     pub(crate) life: u32,
     pub(crate) time: Stopwatch,
+    pub(crate) credits: u32,
+    pub(crate) killed: u32,
 }
 
 fn setup(mut commands: Commands) {
     commands.insert_resource(Stats {
         life: 20,
         time: Stopwatch::new(),
+        credits: 20,
+        killed: 0,
     });
 }
 

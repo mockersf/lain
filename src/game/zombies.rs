@@ -119,10 +119,12 @@ fn refresh_zombie_path(
     }
 }
 
-fn death(mut commands: Commands, zombies: Query<(Entity, &Zombie)>) {
+fn death(mut commands: Commands, zombies: Query<(Entity, &Zombie)>, mut stats: ResMut<Stats>) {
     for (entity, zombie) in &zombies {
         if zombie.life < 0.0 {
             commands.entity(entity).despawn_recursive();
+            stats.credits += 5;
+            stats.killed += 1;
         }
     }
 }

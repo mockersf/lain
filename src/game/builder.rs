@@ -16,7 +16,7 @@ use crate::{assets::BuildingAssets, game::terrain_spawner::map_to_world};
 use super::{
     heightmap::LOW_DEF,
     nests::ZombieNest,
-    stats::GameTag,
+    stats::{GameTag, Stats},
     terra::Plane,
     terrain_spawner::{CursorPosition, FilledLot, Map, Occupying, Pathfinding, TOWER_SCALE},
     towers::Tower,
@@ -39,7 +39,8 @@ impl bevy::app::Plugin for Plugin {
 
 struct CursorMaterials {
     valid: Handle<StandardMaterial>,
-    invalid: Handle<StandardMaterial>,
+    blocked: Handle<StandardMaterial>,
+    lacking_resources: Handle<StandardMaterial>,
 }
 
 impl FromWorld for CursorMaterials {
@@ -52,8 +53,14 @@ impl FromWorld for CursorMaterials {
                 unlit: true,
                 ..default()
             }),
-            invalid: materials.add(StandardMaterial {
+            blocked: materials.add(StandardMaterial {
                 base_color: Color::rgba(1.0, 0.2, 0.2, 0.5),
+                alpha_mode: AlphaMode::Blend,
+                unlit: true,
+                ..default()
+            }),
+            lacking_resources: materials.add(StandardMaterial {
+                base_color: Color::rgba(1.0, 0.2, 0.8, 0.5),
                 alpha_mode: AlphaMode::Blend,
                 unlit: true,
                 ..default()
@@ -94,6 +101,7 @@ fn update_cursor(
     map: Res<Map>,
     plane: Res<Plane>,
     materials: Res<CursorMaterials>,
+    stats: Res<Stats>,
 ) {
     let (mut transform, mut material) = cursor.single_mut();
     transform.translation = cursor_position.world;
@@ -104,11 +112,13 @@ fn update_cursor(
         .map(|o| o.is_free())
         .unwrap_or(true)
     {
-        if *material == materials.invalid {
+        if *material != materials.valid && stats.credits >= 10 {
             *material = materials.valid.clone_weak();
+        } else if *material != materials.lacking_resources && stats.credits < 10 {
+            *material = materials.lacking_resources.clone_weak();
         }
     } else if *material == materials.valid {
-        *material = materials.invalid.clone_weak();
+        *material = materials.blocked.clone_weak();
     }
 }
 
@@ -125,10 +135,11 @@ fn build(
     materials: Res<CursorMaterials>,
     pathfinding: Res<Pathfinding>,
     nests: Query<&ZombieNest>,
+    mut stats: ResMut<Stats>,
 ) {
     if mouse_button_input.just_released(MouseButton::Left) {
         if let Some(pos) = windows.primary().cursor_position() {
-            if pos.x < 140.0 && pos.y > 550.0 {
+            if pos.x < 140.0 && pos.y > 460.0 {
                 // in UI zone
                 return;
             }
@@ -188,6 +199,7 @@ fn build(
                 Transform::from_translation(cursor_position.world),
                 GameTag,
             ));
+            stats.credits -= 10;
         }
     }
 }

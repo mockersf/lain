@@ -51,6 +51,9 @@ impl From<UiButtons> for String {
 #[derive(Component)]
 struct LiveMarker;
 
+#[derive(Component)]
+struct CreditsMarker;
+
 fn setup(
     mut commands: Commands,
     ui_handles: Res<UiAssets>,
@@ -103,7 +106,7 @@ fn setup(
         30.,
     );
 
-    let lost_text = commands
+    let lives_text = commands
         .spawn_bundle(TextBundle {
             style: Style {
                 size: Size {
@@ -125,7 +128,7 @@ fn setup(
                 TextSection {
                     value: format!("{}", stats.life),
                     style: TextStyle {
-                        font: font,
+                        font: font.clone(),
                         color: crate::ui_helper::ColorScheme::TEXT,
                         font_size: 20.,
                         ..Default::default()
@@ -135,6 +138,39 @@ fn setup(
             ..Default::default()
         })
         .insert(LiveMarker)
+        .id();
+    let credits_text = commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                size: Size {
+                    height: Val::Px(20.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::from_sections([
+                TextSection {
+                    value: "credits: ".to_string(),
+                    style: TextStyle {
+                        font: font.clone(),
+                        color: crate::ui_helper::ColorScheme::TEXT,
+                        font_size: 20.,
+                        ..Default::default()
+                    },
+                },
+                TextSection {
+                    value: format!("{}", stats.credits),
+                    style: TextStyle {
+                        font: font,
+                        color: crate::ui_helper::ColorScheme::TEXT,
+                        font_size: 20.,
+                        ..Default::default()
+                    },
+                },
+            ]),
+            ..Default::default()
+        })
+        .insert(CreditsMarker)
         .id();
 
     let inner_content = commands
@@ -146,12 +182,12 @@ fn setup(
             },
             ..Default::default()
         })
+        .push_children(&[lives_text, credits_text])
         .id();
-    commands.entity(inner_content).push_children(&[lost_text]);
     let panel = commands
         .spawn_bundle(bevy_ninepatch::NinePatchBundle {
             style: Style {
-                size: Size::new(Val::Px(120.), Val::Px(50.)),
+                size: Size::new(Val::Px(120.), Val::Px(80.)),
                 align_content: AlignContent::Stretch,
                 flex_direction: FlexDirection::ColumnReverse,
                 ..Default::default()
@@ -186,7 +222,7 @@ fn setup(
                         },
                         size: Size {
                             width: Val::Undefined,
-                            height: Val::Px(210.0),
+                            height: Val::Px(250.0),
                         },
                         flex_direction: FlexDirection::ColumnReverse,
                         justify_content: JustifyContent::SpaceAround,
@@ -271,6 +307,11 @@ fn button_system(
     }
 }
 
-fn update_ui(stats: Res<Stats>, mut live_text: Query<&mut Text, With<LiveMarker>>) {
+fn update_ui(
+    stats: Res<Stats>,
+    mut live_text: Query<&mut Text, (With<LiveMarker>, Without<CreditsMarker>)>,
+    mut credits_text: Query<&mut Text, With<CreditsMarker>>,
+) {
     live_text.single_mut().sections[1].value = format!("{}", stats.life);
+    credits_text.single_mut().sections[1].value = format!("{}", stats.credits);
 }
