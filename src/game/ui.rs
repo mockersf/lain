@@ -161,7 +161,7 @@ fn setup(
                 TextSection {
                     value: format!("{}", stats.credits),
                     style: TextStyle {
-                        font: font,
+                        font,
                         color: crate::ui_helper::ColorScheme::TEXT,
                         font_size: 20.,
                         ..Default::default()
