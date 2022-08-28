@@ -125,7 +125,7 @@ fn setup(
                 TextSection {
                     value: format!("{}", stats.life),
                     style: TextStyle {
-                        font: font.clone(),
+                        font: font,
                         color: crate::ui_helper::ColorScheme::TEXT,
                         font_size: 20.,
                         ..Default::default()
