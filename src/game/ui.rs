@@ -258,21 +258,21 @@ fn button_system(
     mut playing_state: ResMut<State<PlayingState>>,
     mut building: Local<bool>,
 ) {
-    for (interaction, button_id, changed) in interaction_query.iter() {
-        if *interaction == Interaction::Clicked {
-            match (button_id.0, changed) {
-                (UiButtons::ZoomIn, _) => {
-                    if camera.single().translation.y > 2.0 {
-                        camera.single_mut().translation.y -= time.delta_seconds() * 2.0;
+    if *playing_state.current() != PlayingState::SwitchingPlane {
+        for (interaction, button_id, changed) in interaction_query.iter() {
+            if *interaction == Interaction::Clicked {
+                match (button_id.0, changed) {
+                    (UiButtons::ZoomIn, _) => {
+                        if camera.single().translation.y > 2.0 {
+                            camera.single_mut().translation.y -= time.delta_seconds() * 2.0;
+                        }
                     }
-                }
-                (UiButtons::ZoomOut, _) => {
-                    if camera.single().translation.y < 20.0 {
-                        camera.single_mut().translation.y += time.delta_seconds() * 2.0;
+                    (UiButtons::ZoomOut, _) => {
+                        if camera.single().translation.y < 20.0 {
+                            camera.single_mut().translation.y += time.delta_seconds() * 2.0;
+                        }
                     }
-                }
-                (UiButtons::SwitchPlane, true) => {
-                    if *playing_state.current() != PlayingState::SwitchingPlane {
+                    (UiButtons::SwitchPlane, true) => {
                         playing_state.set(PlayingState::SwitchingPlane).unwrap();
                         for (mut text, button) in &mut text_query {
                             if button.0 == UiButtons::BuildTower {
@@ -281,27 +281,27 @@ fn button_system(
                             }
                         }
                     }
-                }
-                (UiButtons::BuildTower, true) => {
-                    if *building {
-                        playing_state.set(PlayingState::Playing).unwrap();
-                        for (mut text, button) in &mut text_query {
-                            if button.0 == UiButtons::BuildTower {
-                                text.sections[0].value = UiButtons::BuildTower.into();
-                                *building = false;
+                    (UiButtons::BuildTower, true) => {
+                        if *building {
+                            playing_state.set(PlayingState::Playing).unwrap();
+                            for (mut text, button) in &mut text_query {
+                                if button.0 == UiButtons::BuildTower {
+                                    text.sections[0].value = UiButtons::BuildTower.into();
+                                    *building = false;
+                                }
                             }
-                        }
-                    } else {
-                        playing_state.set(PlayingState::Building).unwrap();
-                        for (mut text, button) in &mut text_query {
-                            if button.0 == UiButtons::BuildTower {
-                                text.sections[0].value = UiButtons::Cancel.into();
-                                *building = true;
+                        } else {
+                            playing_state.set(PlayingState::Building).unwrap();
+                            for (mut text, button) in &mut text_query {
+                                if button.0 == UiButtons::BuildTower {
+                                    text.sections[0].value = UiButtons::Cancel.into();
+                                    *building = true;
+                                }
                             }
                         }
                     }
+                    _ => (),
                 }
-                _ => (),
             }
         }
     }
