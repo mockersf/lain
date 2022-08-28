@@ -2106,9 +2106,9 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.4.7"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "327fa5b6a6940e4699ec49a9beae1ea4845c6bab9314e4f84ac68742139d8c53"
+checksum = "9f80bf5aacaf25cbfc8210d1cfb718f2bf3b11c4c54e5afe36c236853a8ec390"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -2640,7 +2640,7 @@ dependencies = [
 [[package]]
 name = "polyanya"
 version = "0.1.0"
-source = "git+https://github.com/vleue/polyanya#a20375d76027ae4d262e6b341c08943742505258"
+source = "git+https://github.com/vleue/polyanya#df8928117521ce058496090e813dd7dea7e75927"
 dependencies = [
  "glam",
  "hashbrown",

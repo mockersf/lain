@@ -24,7 +24,8 @@ pub(crate) struct Pathfinding {
 
 use super::{nests::ZombieNest, PlayingState};
 
-const BORDER: f32 = 15.0;
+const BORDER: f32 = 2.0;
+const MAP_DELTA: isize = 3;
 
 #[cfg(target = "wasm32-unknown-unknown")]
 const CHANNEL_SIZE: usize = 1;
@@ -680,8 +681,12 @@ fn intersection(
 fn update_pathfinding(map: Res<Map>, mut pathfinding: ResMut<Pathfinding>) {
     if map.is_changed() {
         info!("refreshing pathfinding mesh");
-        pathfinding.mesh =
-            new_mesh_from_map(&map, BORDER as isize, BORDER as isize, LOW_DEF as usize);
+        pathfinding.mesh = new_mesh_from_map(
+            &map,
+            BORDER as isize + MAP_DELTA,
+            BORDER as isize + MAP_DELTA,
+            LOW_DEF as usize,
+        );
     }
 }
 
@@ -701,13 +706,7 @@ fn new_mesh_from_map(
             };
             count as usize
         ],
-        polygons: vec![
-            polyanya::Polygon {
-                vertices: vec![],
-                is_one_way: false
-            };
-            count as usize
-        ],
+        polygons: vec![polyanya::Polygon::EMPTY; count as usize],
     };
 
     for im in -half_width..=half_width {
