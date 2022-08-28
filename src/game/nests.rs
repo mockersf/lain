@@ -1,10 +1,11 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
+use rand::seq::SliceRandom;
 
 use crate::{assets::ZombieAssets, GameState};
 
-use super::{stats::GameTag, terrain_spawner::map_to_world, zombies::IdleZombie};
+use super::{stats::GameTag, terra::Plane, terrain_spawner::map_to_world, zombies::IdleZombie};
 
 pub(crate) struct Plugin;
 
@@ -26,6 +27,7 @@ fn spawn_zombies(
     mut nests: Query<&mut ZombieNest>,
     zombie_assets: Res<ZombieAssets>,
     time: Res<Time>,
+    plane: Res<Plane>,
 ) {
     for mut nest in &mut nests {
         if nest.timer.tick(time.delta()).just_finished() {
@@ -35,13 +37,23 @@ fn spawn_zombies(
                 .looking_at(Vec3::ZERO, Vec3::Y)
                 .with_scale(Vec3::splat(0.05));
             transform.rotate(Quat::from_rotation_y(PI));
+            let mut rng = rand::thread_rng();
+            let zombie_plane = *[Plane::Material, Plane::Ethereal].choose(&mut rng).unwrap();
             commands
                 .spawn_bundle(SceneBundle {
                     scene: zombie_assets.zombie.clone_weak(),
                     transform,
+                    visibility: Visibility {
+                        is_visible: *plane == zombie_plane,
+                    },
                     ..default()
                 })
-                .insert_bundle((IdleZombie, GameTag));
+                .insert_bundle((
+                    IdleZombie {
+                        plane: zombie_plane,
+                    },
+                    GameTag,
+                ));
         }
     }
 }
