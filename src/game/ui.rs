@@ -1,31 +1,25 @@
-use bevy::{
-    prelude::{
-        default, Assets, BuildChildren, Camera, Changed, Color, Commands, Local, NodeBundle, Query,
-        Res, ResMut, State, SystemSet, Transform, With,
-    },
-    text::Text,
-    time::Time,
-    ui::{
-        FlexDirection, Interaction, JustifyContent, PositionType, Size, Style, UiColor, UiRect, Val,
-    },
-};
+use bevy::prelude::*;
 use tracing::info;
 
 use crate::{
-    assets::UiAssets,
+    assets::{CloneWeak, UiAssets},
     game::stats::GameTag,
     ui_helper::button::{ButtonId, ButtonText},
     GameState,
 };
 
-use super::PlayingState;
+use super::{stats::Stats, PlayingState};
 
 pub(crate) struct Plugin;
 
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
-            .add_system_set(SystemSet::on_update(GameState::Playing).with_system(button_system));
+            .add_system_set(
+                SystemSet::on_update(GameState::Playing)
+                    .with_system(button_system)
+                    .with_system(update_ui),
+            );
     }
 }
 
@@ -54,10 +48,14 @@ impl From<UiButtons> for String {
     }
 }
 
+#[derive(Component)]
+struct LiveMarker;
+
 fn setup(
     mut commands: Commands,
     ui_handles: Res<UiAssets>,
     buttons: Res<Assets<crate::ui_helper::button::Button>>,
+    stats: Res<Stats>,
 ) {
     info!("loading UI");
 
@@ -65,6 +63,7 @@ fn setup(
     let button = buttons.get(&button_handle).unwrap();
     let font = ui_handles.font_sub.clone_weak();
     let material = ui_handles.font_material.clone_weak();
+    let panel_handles = ui_handles.panel_handle.clone_weak();
 
     let build_button = button.add(
         &mut commands,
@@ -80,7 +79,7 @@ fn setup(
         120.,
         40.,
         UiRect::all(Val::Auto),
-        font,
+        font.clone(),
         UiButtons::SwitchPlane,
         20.,
     );
@@ -104,6 +103,68 @@ fn setup(
         30.,
     );
 
+    let lost_text = commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                size: Size {
+                    height: Val::Px(20.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::from_sections([
+                TextSection {
+                    value: "lives: ".to_string(),
+                    style: TextStyle {
+                        font: font.clone(),
+                        color: crate::ui_helper::ColorScheme::TEXT,
+                        font_size: 20.,
+                        ..Default::default()
+                    },
+                },
+                TextSection {
+                    value: format!("{}", stats.life),
+                    style: TextStyle {
+                        font: font.clone(),
+                        color: crate::ui_helper::ColorScheme::TEXT,
+                        font_size: 20.,
+                        ..Default::default()
+                    },
+                },
+            ]),
+            ..Default::default()
+        })
+        .insert(LiveMarker)
+        .id();
+
+    let inner_content = commands
+        .spawn_bundle(NodeBundle {
+            color: UiColor(Color::NONE),
+            style: Style {
+                flex_direction: FlexDirection::ColumnReverse,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .id();
+    commands.entity(inner_content).push_children(&[lost_text]);
+    let panel = commands
+        .spawn_bundle(bevy_ninepatch::NinePatchBundle {
+            style: Style {
+                size: Size::new(Val::Px(120.), Val::Px(50.)),
+                align_content: AlignContent::Stretch,
+                flex_direction: FlexDirection::ColumnReverse,
+                ..Default::default()
+            },
+            nine_patch_data: bevy_ninepatch::NinePatchData::with_single_content(
+                panel_handles.1,
+                panel_handles.0,
+                inner_content,
+            ),
+            ..Default::default()
+        })
+        .id();
+
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -125,7 +186,7 @@ fn setup(
                         },
                         size: Size {
                             width: Val::Undefined,
-                            height: Val::Px(150.0),
+                            height: Val::Px(210.0),
                         },
                         flex_direction: FlexDirection::ColumnReverse,
                         justify_content: JustifyContent::SpaceAround,
@@ -135,6 +196,7 @@ fn setup(
                     color: UiColor(Color::NONE),
                     ..default()
                 })
+                .push_children(&[panel])
                 .with_children(|builder| {
                     builder
                         .spawn_bundle(NodeBundle {
@@ -207,4 +269,8 @@ fn button_system(
             }
         }
     }
+}
+
+fn update_ui(stats: Res<Stats>, mut live_text: Query<&mut Text, With<LiveMarker>>) {
+    live_text.single_mut().sections[1].value = format!("{}", stats.life);
 }
