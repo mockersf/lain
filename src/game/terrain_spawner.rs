@@ -17,9 +17,41 @@ use crate::{
     GameState,
 };
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct Pathfinding {
     pub(crate) mesh: polyanya::Mesh,
+}
+
+impl Pathfinding {
+    pub(crate) fn cut_polygon_out(&mut self, coords: (IVec2, IVec2)) {
+        Self::inner_cut_polygon_out(
+            &mut self.mesh,
+            coords,
+            BORDER as isize + MAP_DELTA,
+            BORDER as isize + MAP_DELTA,
+        );
+    }
+
+    fn inner_cut_polygon_out(
+        mesh: &mut polyanya::Mesh,
+        coords: (IVec2, IVec2),
+        half_width: isize,
+        half_height: isize,
+    ) {
+        let id = coords_to_polygon_id(coords, half_width, half_height);
+        let poly = mesh.polygons.get_mut(id as usize).unwrap();
+        for v in &poly.vertices {
+            let v = mesh.vertices.get_mut(*v).unwrap();
+
+            v.polygons = v
+                .polygons
+                .iter()
+                .map(|p| if *p != id as isize { *p } else { -1 })
+                .collect();
+            v.is_corner = true;
+        }
+        *poly = polyanya::Polygon::EMPTY;
+    }
 }
 
 use super::{nests::ZombieNest, PlayingState};
@@ -822,6 +854,11 @@ fn coords_to_polygon_id(coords: (IVec2, IVec2), half_width: isize, half_height: 
 mod tests {
     use bevy::prelude::IVec2;
     use bevy::prelude::Vec2;
+    use bevy::utils::HashMap;
+
+    use crate::game::terra::Plane;
+    use crate::game::terrain_spawner::Occupying;
+    use crate::game::terrain_spawner::Pathfinding;
 
     use super::coords_to_polygon_id as id;
 
@@ -865,6 +902,38 @@ mod tests {
         dbg!(&mesh.polygons);
         dbg!(mesh.vertices.len());
         // assert!(false);
+    }
+
+    #[test]
+    fn mesh_cutting() {
+        let mut map = super::Map {
+            lots: Default::default(),
+        };
+        let mut mesh_cut = new_mesh_from_map(&map, 0, 0, 5);
+        Pathfinding::inner_cut_polygon_out(
+            &mut mesh_cut,
+            (IVec2::new(0, 0), IVec2::new(2, 2)),
+            0,
+            0,
+        );
+
+        let mut crystal = HashMap::new();
+        crystal.insert(IVec2::new(2, 2), Occupying::Mountain);
+        map.lots
+            .insert((IVec2::new(0, 0), Plane::Material), crystal);
+
+        let mesh_built = new_mesh_from_map(&map, 0, 0, 5);
+
+        assert_eq!(mesh_cut.vertices.len(), mesh_built.vertices.len());
+        for i in 0..mesh_cut.vertices.len() {
+            eprintln!("vertices {:?}", i);
+            assert_eq!(mesh_cut.vertices[i], mesh_built.vertices[i]);
+        }
+        assert_eq!(mesh_cut.polygons.len(), mesh_built.polygons.len());
+        for i in 0..mesh_cut.polygons.len() {
+            eprintln!("polygons {:?}", i);
+            assert_eq!(mesh_cut.polygons[i], mesh_built.polygons[i]);
+        }
     }
 
     #[test]

@@ -3,19 +3,20 @@ use bevy::{
     prelude::{
         shape, AlphaMode, App, Assets, BuildChildren, Color, Commands, Component,
         DespawnRecursiveExt, Entity, FromWorld, Handle, Input, Mesh, MouseButton, PbrBundle, Query,
-        Res, ResMut, StandardMaterial, SystemSet, Transform, Vec3, With,
+        Res, ResMut, StandardMaterial, SystemSet, Transform, Vec2, Vec3, With,
     },
     scene::SceneBundle,
     utils::default,
     window::Windows,
 };
 
-use crate::assets::BuildingAssets;
+use crate::{assets::BuildingAssets, game::terrain_spawner::map_to_world};
 
 use super::{
     heightmap::LOW_DEF,
+    nests::ZombieNest,
     terra::Plane,
-    terrain_spawner::{CursorPosition, FilledLot, Map, Occupying},
+    terrain_spawner::{CursorPosition, FilledLot, Map, Occupying, Pathfinding},
     PlayingState,
 };
 
@@ -119,6 +120,8 @@ fn build(
     building_assets: Res<BuildingAssets>,
     cursor: Query<&Handle<StandardMaterial>, With<CursorSelection>>,
     materials: Res<CursorMaterials>,
+    pathfinding: Res<Pathfinding>,
+    nests: Query<&ZombieNest>,
 ) {
     if mouse_button_input.just_released(MouseButton::Left) {
         if let Some(pos) = windows.primary().cursor_position() {
@@ -132,6 +135,14 @@ fn build(
         }
 
         if *cursor.single() == materials.valid {
+            let mut temp_mesh = pathfinding.clone();
+            temp_mesh.cut_polygon_out((cursor_position.map, cursor_position.lot));
+            for nest in nests.iter() {
+                let position = map_to_world((nest.map, nest.lot));
+                if !temp_mesh.mesh.path(position, Vec2::ZERO).complete {
+                    return;
+                }
+            }
             map.lots
                 .get_mut(&(cursor_position.map, *plane))
                 .unwrap()
