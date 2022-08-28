@@ -37,13 +37,15 @@ fn move_zombies(
 ) {
     for (entity, mut transform, zombie) in &mut zombies {
         let tr = transform.translation;
-        let target = zombie.path.path[zombie.current_path];
-        let target = Vec3::new(target.x, 0.0, target.y);
-        transform.look_at(target, Vec3::Y);
-        transform.rotate(Quat::from_rotation_y(PI));
-        transform.translation += (target - tr).normalize() * time.delta_seconds() * 0.25;
-        if transform.translation.distance_squared(Vec3::ZERO) < 0.01 {
-            commands.entity(entity).despawn_recursive();
+        if zombie.current_path < zombie.path.path.len() {
+            let target = zombie.path.path[zombie.current_path];
+            let target = Vec3::new(target.x, 0.0, target.y);
+            transform.look_at(target, Vec3::Y);
+            transform.rotate(Quat::from_rotation_y(PI));
+            transform.translation += (target - tr).normalize() * time.delta_seconds() * 0.25;
+            if transform.translation.distance_squared(Vec3::ZERO) < 0.01 {
+                commands.entity(entity).despawn_recursive();
+            }
         }
     }
 }
@@ -52,20 +54,22 @@ fn refresh_zombie_path(
     mut commands: Commands,
     idle_zombies: Query<(Entity, &Transform), With<IdleZombie>>,
     pathed_zombies: Query<Entity, (With<Zombie>, Without<IdleZombie>)>,
-    mut zombies: Query<(&Transform, &mut Zombie)>,
+    mut zombies: Query<(Entity, &Transform, &mut Zombie)>,
     pathfinding: Res<Pathfinding>,
 ) {
     let mut max_per_turn = 5;
     for (zombie, transform) in &idle_zombies {
         let map = world_to_map(Vec2::new(transform.translation.x, transform.translation.z));
         let world = map_to_world(map);
-        commands
-            .entity(zombie)
-            .insert(Zombie {
-                path: pathfinding.mesh.path(world, Vec2::ZERO),
+        let path = pathfinding.mesh.path(world, Vec2::ZERO);
+        if !path.path.is_empty() {
+            commands.entity(zombie).insert(Zombie {
+                path,
                 current_path: 0,
-            })
-            .remove::<IdleZombie>();
+            });
+        }
+        commands.entity(zombie).remove::<IdleZombie>();
+
         max_per_turn -= 1;
         if max_per_turn == 0 {
             return;
@@ -79,11 +83,17 @@ fn refresh_zombie_path(
                 .insert(IdleZombie);
         }
     } else {
-        for (transform, mut zombie) in &mut zombies {
+        for (entity, transform, mut zombie) in &mut zombies {
             let target = zombie.path.path[zombie.current_path];
             let target = Vec3::new(target.x, 0.0, target.y);
             if transform.translation.distance_squared(target) < 0.01 {
                 zombie.current_path += 1;
+                if zombie.current_path == zombie.path.path.len() {
+                    commands
+                        .entity(entity)
+                        .remove::<Zombie>()
+                        .insert(IdleZombie);
+                }
             }
         }
     }
