@@ -13,6 +13,7 @@ use tracing::info;
 
 use crate::{
     assets::UiAssets,
+    game::stats::GameTag,
     ui_helper::button::{ButtonId, ButtonText},
     GameState,
 };
@@ -112,6 +113,7 @@ fn setup(
             color: Color::NONE.into(),
             ..default()
         })
+        .insert(GameTag)
         .with_children(|commands| {
             commands
                 .spawn_bundle(NodeBundle {

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{assets::ZombieAssets, GameState};
 
-use super::{terrain_spawner::map_to_world, zombies::IdleZombie};
+use super::{stats::GameTag, terrain_spawner::map_to_world, zombies::IdleZombie};
 
 pub(crate) struct Plugin;
 
@@ -41,7 +41,7 @@ fn spawn_zombies(
                     transform,
                     ..default()
                 })
-                .insert(IdleZombie);
+                .insert_bundle((IdleZombie, GameTag));
         }
     }
 }

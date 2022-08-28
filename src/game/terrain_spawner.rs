@@ -12,8 +12,11 @@ use rand::Rng;
 
 use crate::{
     assets::{BuildingAssets, SceneryAssets},
-    game::heightmap::{HeightMap, LOW_DEF},
     game::terra::{Plane, TerraNoises},
+    game::{
+        heightmap::{HeightMap, LOW_DEF},
+        stats::GameTag,
+    },
     GameState,
 };
 
@@ -620,6 +623,7 @@ fn refresh_visible_lots(
                                     GlobalTransform::identity(),
                                     Visibility::visible(),
                                     ComputedVisibility::not_visible(),
+                                    GameTag,
                                 ))
                                 .id(),
                             *plane,

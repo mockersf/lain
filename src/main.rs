@@ -90,7 +90,7 @@ pub(crate) enum GameState {
     // About,
     Playing,
     // Paused,
-    // Lost,
+    Lost,
     Exit,
 }
 

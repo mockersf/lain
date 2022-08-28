@@ -7,7 +7,7 @@ use crate::{
     GameState,
 };
 
-use super::terrain_spawner::Pathfinding;
+use super::{stats::Stats, terrain_spawner::Pathfinding};
 
 pub(crate) struct Plugin;
 
@@ -34,6 +34,7 @@ fn move_zombies(
     mut commands: Commands,
     mut zombies: Query<(Entity, &mut Transform, &Zombie)>,
     time: Res<Time>,
+    mut stats: ResMut<Stats>,
 ) {
     for (entity, mut transform, zombie) in &mut zombies {
         let tr = transform.translation;
@@ -45,6 +46,9 @@ fn move_zombies(
             transform.translation += (target - tr).normalize() * time.delta_seconds() * 0.25;
             if transform.translation.distance_squared(Vec3::ZERO) < 0.01 {
                 commands.entity(entity).despawn_recursive();
+                if let Some(life) = stats.life.checked_sub(1) {
+                    stats.life = life;
+                }
             }
         }
     }
