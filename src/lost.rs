@@ -18,7 +18,7 @@ pub(crate) struct Plugin;
 impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Screen {
-            done: Timer::from_seconds(10.0, false),
+            done: Timer::from_seconds(20.0, false),
         })
         .add_system_set(SystemSet::on_enter(CURRENT_STATE).with_system(setup))
         .add_system_set(SystemSet::on_exit(CURRENT_STATE).with_system(tear_down))
@@ -107,7 +107,28 @@ fn setup(mut commands: Commands, ui_handles: Res<UiAssets>, stats: Res<Stats>) {
                 ..Default::default()
             },
             text: Text::from_section(
-                format!("you survived {:.1} seconds", stats.time.elapsed_secs(),),
+                format!("you survived {:.1} seconds", stats.time.elapsed_secs()),
+                TextStyle {
+                    font: font_details.clone(),
+                    color: crate::ui_helper::ColorScheme::TEXT,
+                    font_size: 40.,
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        })
+        .id();
+    let zombie_killed = commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                size: Size {
+                    height: Val::Px(75.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::from_section(
+                format!("and killed {:.1} zombies", stats.killed),
                 TextStyle {
                     font: font_details,
                     color: crate::ui_helper::ColorScheme::TEXT,
@@ -131,7 +152,7 @@ fn setup(mut commands: Commands, ui_handles: Res<UiAssets>, stats: Res<Stats>) {
         .id();
     commands
         .entity(inner_content)
-        .push_children(&[lost_text, time_survived]);
+        .push_children(&[lost_text, time_survived, zombie_killed]);
 
     let panel_style = Style {
         position_type: PositionType::Absolute,
