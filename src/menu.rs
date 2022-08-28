@@ -46,7 +46,7 @@ impl bevy::app::Plugin for Plugin {
 #[derive(Clone, Copy)]
 enum MenuButton {
     NewGame,
-    About,
+    // About,
     #[cfg(not(target_arch = "wasm32"))]
     Quit,
 }
@@ -55,7 +55,7 @@ impl From<MenuButton> for String {
     fn from(button: MenuButton) -> String {
         match button {
             MenuButton::NewGame => "New Game".to_string(),
-            MenuButton::About => "About".to_string(),
+            // MenuButton::About => "About".to_string(),
             #[cfg(not(target_arch = "wasm32"))]
             MenuButton::Quit => "Quit".to_string(),
         }
@@ -64,7 +64,7 @@ impl From<MenuButton> for String {
 
 const MENU_BUTTONS: &[MenuButton] = &[
     MenuButton::NewGame,
-    MenuButton::About,
+    // MenuButton::About,
     #[cfg(not(target_arch = "wasm32"))]
     MenuButton::Quit,
 ];
@@ -424,16 +424,16 @@ fn button_system(
                 MenuButton::Quit => {
                     let _ = state.set(crate::GameState::Exit);
                 }
-                MenuButton::About => {
-                    let _ = state.set(crate::GameState::About);
-                }
+                // MenuButton::About => {
+                //     let _ = state.set(crate::GameState::About);
+                // }
                 MenuButton::NewGame => {
                     let _ = state.set(crate::GameState::Playing);
                 }
             },
             Interaction::Hovered => match button_id.0 {
                 MenuButton::NewGame => screen.menu_selected = Some(0),
-                MenuButton::About => screen.menu_selected = Some(1),
+                // MenuButton::About => screen.menu_selected = Some(1),
                 #[cfg(not(target_arch = "wasm32"))]
                 MenuButton::Quit => screen.menu_selected = Some(2),
             },
