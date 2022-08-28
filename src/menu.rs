@@ -6,8 +6,12 @@ use bevy::{
 };
 
 use bevy_easings::Ease;
+use bevy_jornet::Leaderboard;
 
-use crate::assets::{CloneWeak, UiAssets, ZombieAssets};
+use crate::{
+    assets::{CloneWeak, UiAssets, ZombieAssets},
+    ui_helper::ColorScheme,
+};
 
 const CURRENT_STATE: crate::GameState = crate::GameState::Menu;
 
@@ -38,7 +42,8 @@ impl bevy::app::Plugin for Plugin {
                     .with_system(keyboard_input_system)
                     .with_system(gamepad_input_system)
                     .with_system(button_system)
-                    .with_system(display_menu_item_selector),
+                    .with_system(display_menu_item_selector)
+                    .with_system(display_player_name),
             );
     }
 }
@@ -80,8 +85,11 @@ fn setup(
     mut gamepad_input: ResMut<Input<GamepadButton>>,
     mut camera: Query<&mut Transform, With<Camera>>,
     mut light: Query<&mut DirectionalLight>,
+    leaderboard: Res<Leaderboard>,
 ) {
     info!("Loading screen");
+
+    leaderboard.refresh_leaderboard();
 
     let mut transform = camera.single_mut();
     *transform = Transform::from_translation(Vec3::new(-1.0, 2.0, 10.0))
@@ -104,6 +112,7 @@ fn setup(
     let button_handle = ui_handles.button_handle.clone_weak();
     let button = buttons.get(&button_handle).unwrap();
     let font = ui_handles.font_main.clone_weak();
+    let font_details = ui_handles.font_sub.clone_weak();
     let menu_indicator = ui_handles.selection_handle.clone_weak();
 
     commands
@@ -290,8 +299,46 @@ fn setup(
         })
         .insert(ScreenTag);
 
+    commands
+        .spawn_bundle(
+            TextBundle::from_sections([
+                TextSection {
+                    value: "you are: ".to_string(),
+                    style: TextStyle {
+                        font: font_details.clone_weak(),
+                        font_size: 20.0,
+                        color: ColorScheme::TEXT_DARK,
+                    },
+                },
+                TextSection {
+                    value: leaderboard
+                        .get_player()
+                        .map(|p| p.name.clone())
+                        .unwrap_or_default(),
+                    style: TextStyle {
+                        font: font_details,
+                        font_size: 25.0,
+                        color: ColorScheme::TEXT_DARK,
+                    },
+                },
+            ])
+            .with_style(Style {
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    left: Val::Px(10.0),
+                    bottom: Val::Px(10.0),
+                    ..default()
+                },
+                ..default()
+            }),
+        )
+        .insert_bundle((PlayerName, ScreenTag));
+
     screen.first_load = false;
 }
+
+#[derive(Component)]
+struct PlayerName;
 
 fn tear_down(mut commands: Commands, query: Query<Entity, With<ScreenTag>>) {
     info!("tear down");
@@ -464,6 +511,17 @@ fn display_menu_item_selector(
             } else {
                 visible.is_visible = false;
             }
+        }
+    }
+}
+
+fn display_player_name(
+    leaderboard: Res<Leaderboard>,
+    mut player_name: Query<&mut Text, With<PlayerName>>,
+) {
+    if leaderboard.is_changed() {
+        if let Some(player) = leaderboard.get_player() {
+            player_name.single_mut().sections[1].value = player.name.clone();
         }
     }
 }

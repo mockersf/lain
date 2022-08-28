@@ -80,6 +80,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::game::Plugin)
         .add_plugin(crate::lost::Plugin)
         .add_system(animate_light_direction)
+        .add_plugin(JornetPlugin::with_leaderboard(
+            option_env!("JORNET_LEADERBOARD_ID").unwrap_or_default(),
+            option_env!("JORNET_LEADERBOARD_KEY").unwrap_or_default(),
+        ))
         .run();
 
     Ok(())

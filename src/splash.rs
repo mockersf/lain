@@ -9,6 +9,7 @@ use bevy::{
         RenderApp, RenderStage,
     },
 };
+use bevy_jornet::Leaderboard;
 use crossbeam_channel::Receiver;
 use rand::Rng;
 
@@ -223,8 +224,14 @@ fn pipeline_preloader(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut leaderboard: ResMut<Leaderboard>,
+) {
     info!("Loading screen");
+
+    leaderboard.create_player(None);
 
     let vleue_logo = asset_server.load("branding/logo.png");
     let bevy_logo = asset_server.load("branding/bevy_logo_dark.png");
