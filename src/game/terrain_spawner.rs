@@ -62,6 +62,8 @@ use super::{nests::ZombieNest, PlayingState};
 const BORDER: f32 = 2.0;
 const MAP_DELTA: isize = 3;
 
+pub(crate) const TOWER_SCALE: f32 = 0.8;
+
 #[cfg(target = "wasm32-unknown-unknown")]
 const CHANNEL_SIZE: usize = 1;
 #[cfg(not(target = "wasm32-unknown-unknown"))]
@@ -333,7 +335,7 @@ fn fill_empty_lots(
                                                 building_assets.ethereal_tower.clone_weak()
                                             },
                                             transform: Transform {
-                                                scale: Vec3::splat(0.6 / LOW_DEF as f32),
+                                                scale: Vec3::splat(TOWER_SCALE / LOW_DEF as f32),
                                                 translation: Vec3::new(
                                                     -(building.0.x - LOW_DEF as i32 / 2) as f32
                                                         / LOW_DEF as f32,

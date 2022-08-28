@@ -16,7 +16,7 @@ use super::{
     heightmap::LOW_DEF,
     nests::ZombieNest,
     terra::Plane,
-    terrain_spawner::{CursorPosition, FilledLot, Map, Occupying, Pathfinding},
+    terrain_spawner::{CursorPosition, FilledLot, Map, Occupying, Pathfinding, TOWER_SCALE},
     PlayingState,
 };
 
@@ -161,7 +161,7 @@ fn build(
                                 building_assets.ethereal_tower.clone_weak()
                             },
                             transform: Transform {
-                                scale: Vec3::splat(1.0 / LOW_DEF as f32),
+                                scale: Vec3::splat(TOWER_SCALE / LOW_DEF as f32),
                                 translation: Vec3::new(
                                     -(cursor_position.lot.x - LOW_DEF as i32 / 2) as f32
                                         / LOW_DEF as f32,
