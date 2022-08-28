@@ -11,6 +11,7 @@ use game::terrain_spawner::RaycastSet;
 
 mod assets;
 mod game;
+mod lost;
 mod menu;
 mod splash;
 mod ui_helper;
@@ -77,6 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::splash::Plugin)
         .add_plugin(crate::menu::Plugin)
         .add_plugin(crate::game::Plugin)
+        .add_plugin(crate::lost::Plugin)
         .add_system(animate_light_direction)
         .run();
 
