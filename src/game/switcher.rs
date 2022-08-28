@@ -14,6 +14,7 @@ use tracing::info;
 use super::{
     terra::Plane,
     terrain_spawner::FilledLot,
+    towers::Missile,
     zombies::{IdleZombie, Zombie},
     PlayingState,
 };
@@ -35,7 +36,7 @@ struct SwitchingTimer(Timer);
 fn change_plane(
     mut commands: Commands,
     mut plane: ResMut<Plane>,
-    mut zombies: Query<&mut Visibility, Or<(With<Zombie>, With<IdleZombie>)>>,
+    mut to_change: Query<&mut Visibility, Or<(With<Zombie>, With<IdleZombie>, With<Missile>)>>,
 ) {
     match *plane {
         Plane::Material => {
@@ -46,7 +47,7 @@ fn change_plane(
         }
     }
     commands.insert_resource(SwitchingTimer(Timer::from_seconds(1.0, false)));
-    for mut visibility in &mut zombies {
+    for mut visibility in &mut to_change {
         if visibility.is_visible {
             visibility.is_visible = false;
         }
@@ -96,9 +97,14 @@ fn clear(
     mut commands: Commands,
     lots: Query<(Entity, &FilledLot)>,
     plane: Res<Plane>,
-    mut zombies: Query<
-        (&mut Visibility, Option<&Zombie>, Option<&IdleZombie>),
-        Or<(With<Zombie>, With<IdleZombie>)>,
+    mut to_change: Query<
+        (
+            &mut Visibility,
+            Option<&Zombie>,
+            Option<&IdleZombie>,
+            Option<&Missile>,
+        ),
+        Or<(With<Zombie>, With<IdleZombie>, With<Missile>)>,
     >,
 ) {
     for (entity, lot) in &lots {
@@ -106,11 +112,14 @@ fn clear(
             commands.entity(entity).despawn_recursive();
         }
     }
-    for (mut visibility, zombie, idle) in &mut zombies {
+    for (mut visibility, zombie, idle, missile) in &mut to_change {
         if zombie.map(|z| z.plane == *plane).unwrap_or_default() {
             visibility.is_visible = true;
         }
         if idle.map(|z| z.plane == *plane).unwrap_or_default() {
+            visibility.is_visible = true;
+        }
+        if missile.map(|m| m.plane == *plane).unwrap_or_default() {
             visibility.is_visible = true;
         }
     }

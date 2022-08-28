@@ -5,6 +5,7 @@ pub(crate) mod stats;
 pub(crate) mod switcher;
 pub(crate) mod terra;
 pub(crate) mod terrain_spawner;
+pub(crate) mod towers;
 pub(crate) mod ui;
 pub(crate) mod zombies;
 
@@ -26,6 +27,7 @@ impl bevy::app::Plugin for Plugin {
             .add_plugin(ui::Plugin)
             .add_plugin(builder::Plugin)
             .add_plugin(nests::Plugin)
-            .add_plugin(zombies::Plugin);
+            .add_plugin(zombies::Plugin)
+            .add_plugin(towers::Plugin);
     }
 }

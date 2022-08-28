@@ -118,6 +118,8 @@ pub(crate) struct SceneryAssets {
     pub(crate) bench: Handle<Scene>,
     pub(crate) bench_damaged: Handle<Scene>,
     pub(crate) rock: Handle<Scene>,
+    pub(crate) missile_mesh: Handle<Mesh>,
+    pub(crate) missile_material: Handle<StandardMaterial>,
 }
 
 pub(crate) struct UiAssets {
@@ -174,6 +176,10 @@ fn done(world: &mut World) {
             let scenery_assets = world
                 .remove_resource_unchecked::<RawSceneryAssets>()
                 .unwrap();
+            let mut meshes = world.get_resource_unchecked_mut::<Assets<Mesh>>().unwrap();
+            let mut materials = world
+                .get_resource_unchecked_mut::<Assets<StandardMaterial>>()
+                .unwrap();
             let mut scenes = world.get_resource_unchecked_mut::<Assets<Scene>>().unwrap();
             let gltfs = world.get_resource::<Assets<Gltf>>().unwrap();
             let tree = gltfs.get(&scenery_assets.tree).unwrap();
@@ -187,6 +193,12 @@ fn done(world: &mut World) {
                 bench: scenery_assets.bench,
                 bench_damaged: scenery_assets.bench_damaged,
                 rock: scenery_assets.rock,
+                missile_material: materials.add(StandardMaterial {
+                    base_color: Color::YELLOW,
+                    unlit: true,
+                    ..default()
+                }),
+                missile_mesh: meshes.add(shape::Cube::new(0.05).into()),
             });
         }
     }

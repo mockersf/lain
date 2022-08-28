@@ -5,7 +5,12 @@ use rand::seq::SliceRandom;
 
 use crate::{assets::ZombieAssets, GameState};
 
-use super::{stats::GameTag, terra::Plane, terrain_spawner::map_to_world, zombies::IdleZombie};
+use super::{
+    stats::{GameTag, Stats},
+    terra::Plane,
+    terrain_spawner::map_to_world,
+    zombies::IdleZombie,
+};
 
 pub(crate) struct Plugin;
 
@@ -28,6 +33,7 @@ fn spawn_zombies(
     zombie_assets: Res<ZombieAssets>,
     time: Res<Time>,
     plane: Res<Plane>,
+    stats: Res<Stats>,
 ) {
     for mut nest in &mut nests {
         if nest.timer.tick(time.delta()).just_finished() {
@@ -51,6 +57,7 @@ fn spawn_zombies(
                 .insert_bundle((
                     IdleZombie {
                         plane: zombie_plane,
+                        life: stats.time.elapsed_secs() / 2.0,
                     },
                     GameTag,
                 ));

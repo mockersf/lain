@@ -16,7 +16,8 @@ impl bevy::app::Plugin for Plugin {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(move_zombies)
-                .with_system(refresh_zombie_path.before(move_zombies)),
+                .with_system(refresh_zombie_path.before(move_zombies))
+                .with_system(death),
         );
     }
 }
@@ -24,6 +25,7 @@ impl bevy::app::Plugin for Plugin {
 #[derive(Component)]
 pub(crate) struct IdleZombie {
     pub(crate) plane: Plane,
+    pub(crate) life: f32,
 }
 
 #[derive(Component)]
@@ -31,6 +33,7 @@ pub(crate) struct Zombie {
     pub(crate) path: polyanya::Path,
     pub(crate) current_path: usize,
     pub(crate) plane: Plane,
+    pub(crate) life: f32,
 }
 
 fn move_zombies(
@@ -76,6 +79,7 @@ fn refresh_zombie_path(
                 path,
                 current_path: 0,
                 plane: idle.plane,
+                life: idle.life,
             });
         }
         commands.entity(zombie).remove::<IdleZombie>();
@@ -92,6 +96,7 @@ fn refresh_zombie_path(
                 .remove::<Zombie>()
                 .insert(IdleZombie {
                     plane: zombie.plane,
+                    life: zombie.life,
                 });
         }
     } else {
@@ -106,9 +111,18 @@ fn refresh_zombie_path(
                         .remove::<Zombie>()
                         .insert(IdleZombie {
                             plane: zombie.plane,
+                            life: zombie.life,
                         });
                 }
             }
+        }
+    }
+}
+
+fn death(mut commands: Commands, zombies: Query<(Entity, &Zombie)>) {
+    for (entity, zombie) in &zombies {
+        if zombie.life < 0.0 {
+            commands.entity(entity).despawn_recursive();
         }
     }
 }

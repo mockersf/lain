@@ -6,6 +6,7 @@ use bevy::{
         Res, ResMut, StandardMaterial, SystemSet, Transform, Vec2, Vec3, With,
     },
     scene::SceneBundle,
+    time::Timer,
     utils::default,
     window::Windows,
 };
@@ -15,8 +16,10 @@ use crate::{assets::BuildingAssets, game::terrain_spawner::map_to_world};
 use super::{
     heightmap::LOW_DEF,
     nests::ZombieNest,
+    stats::GameTag,
     terra::Plane,
     terrain_spawner::{CursorPosition, FilledLot, Map, Occupying, Pathfinding, TOWER_SCALE},
+    towers::Tower,
     PlayingState,
 };
 
@@ -176,6 +179,15 @@ fn build(
                     })
                 }
             }
+            commands.spawn_bundle((
+                Tower {
+                    timer: Timer::from_seconds(1.0, true),
+                    strength: 1.0,
+                    plane: *plane,
+                },
+                Transform::from_translation(cursor_position.world),
+                GameTag,
+            ));
         }
     }
 }
