@@ -532,7 +532,7 @@ fn fill_empty_lots(
                                 commands.spawn().insert(ZombieNest {
                                     map: IVec2::new(lot.x, lot.z),
                                     lot: IVec2::new(i as i32, j as i32),
-                                    timer: Timer::from_seconds(5.0, true),
+                                    timer: Timer::from_seconds(6.0, true),
                                 });
                             }
                             let _ = map

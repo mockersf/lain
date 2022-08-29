@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
 
 use crate::{assets::ZombieAssets, GameState};
 
@@ -35,15 +35,17 @@ fn spawn_zombies(
     plane: Res<Plane>,
     stats: Res<Stats>,
 ) {
+    let mut rng = rand::thread_rng();
     for mut nest in &mut nests {
-        if nest.timer.tick(time.delta()).just_finished() {
+        if nest.timer.tick(time.delta()).just_finished()
+            && rng.gen_bool((time.seconds_since_startup().sin().abs() * 2.0).min(1.0))
+        {
             let position = map_to_world((nest.map, nest.lot));
 
             let mut transform = Transform::from_xyz(position.x, 0.2, position.y)
                 .looking_at(Vec3::ZERO, Vec3::Y)
                 .with_scale(Vec3::splat(0.05));
             transform.rotate(Quat::from_rotation_y(PI));
-            let mut rng = rand::thread_rng();
             let zombie_plane = *[Plane::Material, Plane::Ethereal].choose(&mut rng).unwrap();
             commands
                 .spawn_bundle(SceneBundle {
@@ -57,8 +59,8 @@ fn spawn_zombies(
                 .insert_bundle((
                     IdleZombie {
                         plane: zombie_plane,
-                        life: stats.time.elapsed_secs() / 4.0,
-                        speed: stats.time.elapsed_secs() / 1000.0,
+                        life: stats.time.elapsed_secs() / 8.0,
+                        speed: stats.time.elapsed_secs() / 2000.0,
                     },
                     GameTag,
                 ));
