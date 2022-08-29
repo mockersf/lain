@@ -107,7 +107,7 @@ fn setup(
                 ..Default::default()
             },
             text: Text::from_section(
-                format!("you survived {:.1} seconds", stats.time.elapsed_secs()),
+                format!("you survived {} seconds", stats.time.elapsed().as_secs()),
                 TextStyle {
                     font: font_details.clone(),
                     color: crate::ui_helper::ColorScheme::TEXT,
