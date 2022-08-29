@@ -57,7 +57,7 @@ impl Pathfinding {
     }
 }
 
-use super::{nests::ZombieNest, PlayingState};
+use super::{nests::ZombieNest, stats::Stats, PlayingState};
 
 const BORDER: f32 = 2.0;
 const MAP_DELTA: isize = 3;
@@ -592,6 +592,7 @@ fn refresh_visible_lots(
     mut visible_lots: ResMut<VisibleLots>,
     plane: Res<Plane>,
     playing_state: Res<State<PlayingState>>,
+    stats: Res<Stats>,
 ) {
     let margin = 0.5;
     let is_on_screen = |position: Vec3| {
@@ -613,6 +614,8 @@ fn refresh_visible_lots(
 
     let (camera, gt) = camera.single();
 
+    let time_expander = (1.0 / (stats.time.elapsed_secs().sqrt() / 7.0)).min(1.0);
+
     let mut updated_lots: HashMap<IVec2, (Entity, Plane)> = visible_lots
         .0
         .drain()
@@ -620,7 +623,7 @@ fn refresh_visible_lots(
             if let Some(screen_position) =
                 camera.world_to_ndc(gt, Vec3::new(position.x as f32, 0.0, position.y as f32))
             {
-                if !is_on_screen(screen_position) || *plane != *lot_plane {
+                if !is_on_screen(screen_position * time_expander) || *plane != *lot_plane {
                     if *playing_state.current() != PlayingState::SwitchingPlane {
                         info!("despawning {} / {}", position.x, position.y);
                         commands.entity(*entity).despawn_recursive();
@@ -632,14 +635,14 @@ fn refresh_visible_lots(
         })
         .collect();
 
-    let span = gt.translation().y as i32 + 1;
+    let span = gt.translation().y as i32 + 1 + stats.time.elapsed().as_secs() as i32 / 40;
     for i in -span..span {
         for j in -(span / 2)..span {
             let position = IVec2::new(gt.translation().x as i32 + i, gt.translation().z as i32 + j);
             if let Some(screen_position) =
                 camera.world_to_ndc(gt, Vec3::new(position.x as f32, 0.0, position.y as f32))
             {
-                if is_on_screen(screen_position) {
+                if is_on_screen(screen_position * time_expander) {
                     if let Entry::Vacant(vacant) = updated_lots.entry(position) {
                         info!("spawning {} / {}", position.x, position.y);
                         vacant.insert((
