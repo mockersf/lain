@@ -15,8 +15,8 @@ impl bevy::app::Plugin for Plugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
-                .with_system(move_zombies)
-                .with_system(refresh_zombie_path.before(move_zombies))
+                .with_system(move_zombies.before(death))
+                .with_system(refresh_zombie_path.before(move_zombies).before(death))
                 .with_system(death),
         );
     }
