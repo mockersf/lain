@@ -671,7 +671,7 @@ fn move_camera(
     mut query: Query<&mut Transform, With<Camera>>,
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
-    mut playing_state: ResMut<State<PlayingState>>,
+    playing_state: Res<State<PlayingState>>,
 ) {
     if *playing_state.current() != PlayingState::SwitchingPlane {
         let transform = query.single();
@@ -701,9 +701,6 @@ fn move_camera(
         }
         if moving {
             query.single_mut().translation += move_to.normalize() * move_by;
-        }
-        if input.just_pressed(KeyCode::Space) {
-            playing_state.set(PlayingState::SwitchingPlane).unwrap();
         }
     }
 }
