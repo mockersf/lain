@@ -27,6 +27,7 @@ bevy_jornet = "0.1"
 bevy_ninepatch = "0.8"
 bevy_asset_loader = "0.12"
 bevy_mod_raycast = "0.6"
+bevy_mod_debugdump = { version = "0.5", optional = true, default-features = false }
 
 rand = "0.8"
 bracket-noise = "0.8"
@@ -44,6 +45,8 @@ bevy = { version = "0.8", features = [
 [patch.crates-io]
 wgpu = { git = "https://github.com/mockersf/wgpu/", branch = "unconditional-clear-workaround" }
 bevy = { git = "https://github.com/mockersf/bevy/", branch = "pipeline-cache-check" }
+bevy_app = { git = "https://github.com/mockersf/bevy/", branch = "pipeline-cache-check" }
+bevy_ecs = { git = "https://github.com/mockersf/bevy/", branch = "pipeline-cache-check" }
 
 [features]
 default = []
@@ -52,6 +55,7 @@ release = [ "bundled", "tracing/release_max_level_warn" ]
 bundled = [ "bevy_embedded_assets" ]
 trace = [ "bevy/trace" ]
 tracy = [ "bevy/trace", "bevy/trace_tracy" ]
+debug-graph = [ "bevy_mod_debugdump" ]
 
 [profile.dev.package."*"]
 opt-level = 3

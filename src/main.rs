@@ -83,8 +83,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(JornetPlugin::with_leaderboard(
             option_env!("JORNET_LEADERBOARD_ID").unwrap_or_default(),
             option_env!("JORNET_LEADERBOARD_KEY").unwrap_or_default(),
-        ))
-        .run();
+        ));
+
+    #[cfg(feature = "debug-graph")]
+    bevy_mod_debugdump::print_schedule(&mut builder);
+
+    #[cfg(not(feature = "debug-graph"))]
+    builder.run();
 
     Ok(())
 }
