@@ -79,12 +79,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .add_plugin(crate::menu::Plugin)
         .add_plugin(crate::game::Plugin)
         .add_plugin(crate::lost::Plugin)
-        .add_system(animate_light_direction)
-        .add_plugin(JornetPlugin::with_leaderboard(
-            option_env!("JORNET_LEADERBOARD_ID").unwrap_or_default(),
+        .add_system(animate_light_direction);
+
+    if let Some(leaderboard_id) = option_env!("JORNET_LEADERBOARD_ID") {
+        builder.add_plugin(JornetPlugin::with_leaderboard(
+            leaderboard_id,
             option_env!("JORNET_LEADERBOARD_KEY").unwrap_or_default(),
         ));
-
+    }
     #[cfg(feature = "debug-graph")]
     bevy_mod_debugdump::print_schedule(&mut builder);
 

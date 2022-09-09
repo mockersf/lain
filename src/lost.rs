@@ -47,7 +47,6 @@ fn setup(
     });
 
     leaderboard.send_score(stats.killed as f32);
-    println!("refreshing");
     leaderboard.refresh_leaderboard();
 
     let panel_handles = ui_handles.panel_handle.clone_weak();
